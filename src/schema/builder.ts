@@ -67,9 +67,7 @@ class NumberFieldBuilder<T extends number | undefined = number> extends FieldBui
 	}
 }
 
-class BooleanFieldBuilder<
-	T extends boolean | undefined = boolean,
-> extends FieldBuilder<T> {
+class BooleanFieldBuilder<T extends boolean | undefined = boolean> extends FieldBuilder<T> {
 	constructor() {
 		super({ kind: "boolean", isRequired: true, isSensitive: false });
 	}

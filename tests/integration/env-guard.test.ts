@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { createEnv, eg, EnvValidationError } from "../../src/index.js";
-import { writeFileSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { createEnv, EnvValidationError, eg } from "../../src";
 
 describe("createEnv (integration)", () => {
 	it("validates and returns typed env from object source", () => {

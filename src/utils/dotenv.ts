@@ -13,7 +13,7 @@ export function parseDotenv(content: string): Record<string, string> {
 	let i = 0;
 
 	while (i < lines.length) {
-		const line = lines[i]!.trim();
+		const line = lines[i]?.trim();
 		i++;
 
 		if (line === "" || line.startsWith("#")) continue;
@@ -32,8 +32,9 @@ export function parseDotenv(content: string): Record<string, string> {
 			// Multiline value
 			const parts = [value.slice(1)];
 			while (i < lines.length) {
-				const nextLine = lines[i]!;
+				const nextLine = lines[i];
 				i++;
+				if (nextLine === undefined) break;
 				if (nextLine.trimEnd().endsWith('"')) {
 					parts.push(nextLine.trimEnd().slice(0, -1));
 					break;
@@ -44,16 +45,14 @@ export function parseDotenv(content: string): Record<string, string> {
 			continue;
 		}
 
-		// Strip quotes
-		if (
-			(value.startsWith('"') && value.endsWith('"')) ||
-			(value.startsWith("'") && value.endsWith("'")) ||
-			(value.startsWith("`") && value.endsWith("`"))
-		) {
+		// Strip quotes (only matching pairs)
+		const first = value[0];
+		const last = value[value.length - 1];
+		if (first === last && (first === '"' || first === "'" || first === "`")) {
 			value = value.slice(1, -1);
 		} else {
-			// Remove inline comment
-			const commentIndex = value.indexOf(" #");
+			// Remove inline comment (with or without leading space)
+			const commentIndex = value.indexOf("#");
 			if (commentIndex !== -1) {
 				value = value.slice(0, commentIndex).trimEnd();
 			}

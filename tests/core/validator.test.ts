@@ -1,7 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { EnvValidationError, eg } from "../../src";
 import { validateAndCoerce } from "../../src/core/validator.js";
-import { eg } from "../../src/schema/builder.js";
-import { EnvValidationError } from "../../src/errors/validation-error.js";
 
 describe("validateAndCoerce", () => {
 	it("coerces and returns valid values", () => {
@@ -21,8 +20,9 @@ describe("validateAndCoerce", () => {
 
 	it("throws for missing required values", () => {
 		const schema = { SECRET: eg.string().required() };
-		expect(() => validateAndCoerce(schema, { raw: { SECRET: undefined } }))
-			.toThrow(EnvValidationError);
+		expect(() => validateAndCoerce(schema, { raw: { SECRET: undefined } })).toThrow(
+			EnvValidationError,
+		);
 	});
 
 	it("allows undefined for optional values", () => {
@@ -51,7 +51,8 @@ describe("validateAndCoerce", () => {
 			validateAndCoerce(schema, { raw: { KEY: "short" } });
 			expect.unreachable();
 		} catch (err) {
-			const failure = (err as EnvValidationError).failures[0]!;
+			const failure = (err as EnvValidationError).failures[0];
+			if (!failure) throw new Error("No failure");
 			expect(failure.value).toBe("***");
 		}
 	});

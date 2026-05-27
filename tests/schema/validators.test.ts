@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { validateField } from "../../src/schema/validators.js";
+import { describe, expect, it } from "vitest";
 import type { SchemaFieldOptions } from "../../src/schema/types.js";
+import { validateField } from "../../src/schema/validators.js";
 
 const base: SchemaFieldOptions = { kind: "string", isRequired: true, isSensitive: false };
 
@@ -12,7 +12,7 @@ describe("validators", () => {
 	it("fails minLength", () => {
 		const result = validateField("X", "ab", { ...base, minLength: 3 });
 		expect(result).not.toBeNull();
-		expect(result!.message).toContain("at least 3");
+		expect(result?.message).toContain("at least 3");
 	});
 
 	it("fails maxLength", () => {
@@ -23,7 +23,7 @@ describe("validators", () => {
 	it("fails pattern", () => {
 		const result = validateField("X", "123", { ...base, pattern: /^[a-z]+$/ });
 		expect(result).not.toBeNull();
-		expect(result!.message).toContain("pattern");
+		expect(result?.message).toContain("pattern");
 	});
 
 	it("validates url", () => {
@@ -53,6 +53,6 @@ describe("validators", () => {
 
 	it("masks sensitive values", () => {
 		const result = validateField("X", "ab", { ...base, isSensitive: true, minLength: 5 });
-		expect(result!.value).toBe("***");
+		expect(result?.value).toBe("***");
 	});
 });

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { EnvValidationError } from "../../src/errors/validation-error.js";
+import { describe, expect, it } from "vitest";
+import { EnvValidationError } from "../../src";
 
 describe("EnvValidationError", () => {
 	it("formats multiple failures", () => {
@@ -15,9 +15,7 @@ describe("EnvValidationError", () => {
 	});
 
 	it("omits value hint when no value", () => {
-		const err = new EnvValidationError([
-			{ field: "X", message: "is required but missing" },
-		]);
+		const err = new EnvValidationError([{ field: "X", message: "is required but missing" }]);
 		expect(err.message).not.toContain("got:");
 	});
 });

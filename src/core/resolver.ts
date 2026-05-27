@@ -6,10 +6,7 @@ export interface ResolvedValues {
 	raw: Record<string, string | undefined>;
 }
 
-export function resolveSources(
-	schema: SchemaDefinition,
-	sources: EnvSource[],
-): ResolvedValues {
+export function resolveSources(schema: SchemaDefinition, sources: EnvSource[]): ResolvedValues {
 	// Later sources override earlier ones
 	const merged: Record<string, string> = {};
 	for (const source of sources) {

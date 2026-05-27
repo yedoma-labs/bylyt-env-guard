@@ -1,8 +1,8 @@
+import { EnvValidationError } from "../errors/validation-error.js";
 import type { SchemaDefinition, SchemaFieldOptions } from "../schema/types.js";
 import type { ValidationFailure } from "../schema/validators.js";
 import { validateField } from "../schema/validators.js";
 import { CoercionError, coerce } from "../utils/coerce.js";
-import { EnvValidationError } from "../errors/validation-error.js";
 import type { ResolvedValues } from "./resolver.js";
 
 export function validateAndCoerce(
@@ -17,7 +17,7 @@ export function validateAndCoerce(
 		const opts = field._options;
 
 		// Handle missing values
-		if (raw === undefined || raw === "") {
+		if (raw === undefined) {
 			if (opts.defaultValue !== undefined) {
 				result[key] = opts.defaultValue;
 				continue;
@@ -49,9 +49,6 @@ export function validateAndCoerce(
 		// Validate
 		const failure = validateField(key, coerced, opts);
 		if (failure) {
-			if (opts.isSensitive && failure.value) {
-				failure.value = "***";
-			}
 			failures.push(failure);
 			continue;
 		}

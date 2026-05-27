@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { eg } from "../../src/schema/builder.js";
+import { describe, expect, it } from "vitest";
+import { eg } from "../../src";
 
 describe("schema builder", () => {
 	it("creates string field with defaults", () => {
@@ -57,7 +57,11 @@ describe("schema builder", () => {
 	});
 
 	it("string with minLength/maxLength/pattern", () => {
-		const field = eg.string().minLength(3).maxLength(10).pattern(/^[a-z]+$/);
+		const field = eg
+			.string()
+			.minLength(3)
+			.maxLength(10)
+			.pattern(/^[a-z]+$/);
 		expect(field._options.minLength).toBe(3);
 		expect(field._options.maxLength).toBe(10);
 		expect(field._options.pattern).toEqual(/^[a-z]+$/);

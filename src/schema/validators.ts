@@ -37,7 +37,11 @@ function validateString(
 		try {
 			new URL(value);
 		} catch {
-			return { field: key, message: "must be a valid URL", value };
+			return {
+				field: key,
+				message: "must be a valid URL",
+				value: options.isSensitive ? "***" : value,
+			};
 		}
 	}
 
@@ -46,7 +50,7 @@ function validateString(
 			return {
 				field: key,
 				message: `must be one of: ${options.enumValues.join(", ")}`,
-				value,
+				value: options.isSensitive ? "***" : value,
 			};
 		}
 	}
@@ -87,14 +91,14 @@ function validateNumber(
 		return {
 			field: key,
 			message: `must be at least ${options.minValue}`,
-			value: String(value),
+			value: options.isSensitive ? "***" : String(value),
 		};
 	}
 	if (options.maxValue !== undefined && value > options.maxValue) {
 		return {
 			field: key,
 			message: `must be at most ${options.maxValue}`,
-			value: String(value),
+			value: options.isSensitive ? "***" : String(value),
 		};
 	}
 	return null;

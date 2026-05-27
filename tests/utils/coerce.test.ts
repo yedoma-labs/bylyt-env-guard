@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { coerce, CoercionError } from "../../src/utils/coerce.js";
+import { describe, expect, it } from "vitest";
+import { CoercionError, coerce } from "../../src/utils/coerce.js";
 
 describe("coerce", () => {
 	it("passes through strings", () => {

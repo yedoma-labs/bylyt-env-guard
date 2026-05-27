@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { eg } from "../../src";
 import { resolveSources } from "../../src/core/resolver.js";
-import { eg } from "../../src/schema/builder.js";
 
 describe("resolveSources", () => {
 	const schema = {
@@ -9,10 +9,7 @@ describe("resolveSources", () => {
 	};
 
 	it("merges multiple sources (later wins)", () => {
-		const result = resolveSources(schema, [
-			{ FOO: "first", BAR: "1" },
-			{ FOO: "second" },
-		]);
+		const result = resolveSources(schema, [{ FOO: "first", BAR: "1" }, { FOO: "second" }]);
 		expect(result.raw.FOO).toBe("second");
 		expect(result.raw.BAR).toBe("1");
 	});
