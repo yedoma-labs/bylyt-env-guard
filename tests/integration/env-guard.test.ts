@@ -98,3 +98,127 @@ describe("createEnv (integration)", () => {
 		}
 	});
 });
+
+describe("new features integration", () => {
+	it("integer type coerces and validates", () => {
+		const env = createEnv({
+			schema: { COUNT: eg.integer() },
+			sources: [{ COUNT: "42" }],
+		});
+		expect(env.COUNT).toBe(42);
+	});
+
+	it("email type validates valid email", () => {
+		const env = createEnv({
+			schema: { EMAIL: eg.email() },
+			sources: [{ EMAIL: "user@example.com" }],
+		});
+		expect(env.EMAIL).toBe("user@example.com");
+	});
+
+	it("email type rejects invalid email", () => {
+		try {
+			createEnv({
+				schema: { EMAIL: eg.email() },
+				sources: [{ EMAIL: "not-an-email" }],
+			});
+			expect.unreachable();
+		} catch (err) {
+			expect(err).toBeInstanceOf(EnvValidationError);
+			const failure = (err as EnvValidationError).failures[0];
+			expect(failure?.code).toBe("INVALID_EMAIL");
+		}
+	});
+
+	it("json type parses JSON strings", () => {
+		const env = createEnv({
+			schema: { CONFIG: eg.json<{ port: number }>() },
+			sources: [{ CONFIG: '{"port":3000}' }],
+		});
+		expect(env.CONFIG).toEqual({ port: 3000 });
+	});
+
+	it("date type parses date strings", () => {
+		const env = createEnv({
+			schema: { START_DATE: eg.date() },
+			sources: [{ START_DATE: "2024-01-15" }],
+		});
+		expect(env.START_DATE).toBeInstanceOf(Date);
+		expect(env.START_DATE.toISOString()).toContain("2024-01-15");
+	});
+
+	it("resolves from alias when primary is missing", () => {
+		const env = createEnv({
+			schema: { PORT: eg.number().aliases("APP_PORT") },
+			sources: [{ APP_PORT: "8080" }],
+		});
+		expect(env.PORT).toBe(8080);
+	});
+
+	it("transform function is applied", () => {
+		const env = createEnv({
+			schema: { NAME: eg.string().transform((v) => v.toUpperCase()) },
+			sources: [{ NAME: "hello" }],
+		});
+		expect(env.NAME).toBe("HELLO");
+	});
+
+	it("url protocols restriction works", () => {
+		try {
+			createEnv({
+				schema: { API_URL: eg.url().protocols("https") },
+				sources: [{ API_URL: "http://insecure.com" }],
+			});
+			expect.unreachable();
+		} catch (err) {
+			expect(err).toBeInstanceOf(EnvValidationError);
+			const failure = (err as EnvValidationError).failures[0];
+			expect(failure?.code).toBe("INVALID_PROTOCOL");
+		}
+	});
+
+	it("array of numbers is coerced correctly", () => {
+		const env = createEnv({
+			schema: { PORTS: eg.array().of("number") },
+			sources: [{ PORTS: "1,2,3" }],
+		});
+		expect(env.PORTS).toEqual([1, 2, 3]);
+	});
+
+	it("missing required field has MISSING error code", () => {
+		try {
+			createEnv({
+				schema: { REQUIRED_VAR: eg.string() },
+				sources: [{}],
+			});
+			expect.unreachable();
+		} catch (err) {
+			expect(err).toBeInstanceOf(EnvValidationError);
+			const failure = (err as EnvValidationError).failures[0];
+			expect(failure?.code).toBe("MISSING");
+		}
+	});
+
+	it("case-insensitive enum matches", () => {
+		const env = createEnv({
+			schema: { ENV: eg.enum(["prod", "dev"] as const).caseInsensitive() },
+			sources: [{ ENV: "PROD" }],
+		});
+		expect(env.ENV).toBe("PROD");
+	});
+
+	it("defaultFactory is called when value is missing", () => {
+		let callCount = 0;
+		const env = createEnv({
+			schema: {
+				PORT: eg.number().default(() => {
+					callCount++;
+					return 9000;
+				}),
+			},
+			sources: [{}],
+		});
+		expect(env.PORT).toBe(9000);
+		expect(callCount).toBe(1);
+	});
+});

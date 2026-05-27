@@ -67,3 +67,100 @@ describe("schema builder", () => {
 		expect(field._options.pattern).toEqual(/^[a-z]+$/);
 	});
 });
+
+describe("new field types", () => {
+	it("creates integer field", () => {
+		const field = eg.integer();
+		expect(field._options.kind).toBe("integer");
+		expect(field._options.isRequired).toBe(true);
+	});
+
+	it("creates email field", () => {
+		const field = eg.email();
+		expect(field._options.kind).toBe("email");
+		expect(field._options.isRequired).toBe(true);
+	});
+
+	it("creates json field", () => {
+		const field = eg.json();
+		expect(field._options.kind).toBe("json");
+		expect(field._options.isRequired).toBe(true);
+	});
+
+	it("creates date field", () => {
+		const field = eg.date();
+		expect(field._options.kind).toBe("date");
+		expect(field._options.isRequired).toBe(true);
+	});
+
+	it("email with minLength and maxLength", () => {
+		const field = eg.email().minLength(5).maxLength(50);
+		expect(field._options.minLength).toBe(5);
+		expect(field._options.maxLength).toBe(50);
+	});
+
+	it("url with allowed protocols", () => {
+		const field = eg.url().protocols("https", "wss");
+		expect(field._options.allowedProtocols).toEqual(["https", "wss"]);
+	});
+
+	it("enum with caseInsensitive", () => {
+		const field = eg.enum(["a", "b"] as const).caseInsensitive();
+		expect(field._options.caseInsensitive).toBe(true);
+	});
+
+	it("array with item kind", () => {
+		const field = eg.array().of("number");
+		expect(field._options.arrayItemKind).toBe("number");
+	});
+
+	it("integer with min and max", () => {
+		const field = eg.integer().min(0).max(100);
+		expect(field._options.minValue).toBe(0);
+		expect(field._options.maxValue).toBe(100);
+	});
+});
+
+describe("new builder methods", () => {
+	it("sets aliases", () => {
+		const field = eg.string().aliases("ALIAS_1", "ALIAS_2");
+		expect(field._options.aliases).toEqual(["ALIAS_1", "ALIAS_2"]);
+	});
+
+	it("sets custom validator", () => {
+		const validator = (v: string) => (v === "test" ? null : "invalid");
+		const field = eg.string().validate(validator);
+		expect(field._options.customValidator).toBe(validator);
+	});
+
+	it("sets transform function", () => {
+		const transform = (v: string) => v.toUpperCase();
+		const field = eg.string().transform(transform);
+		expect(field._options.transform).toBe(transform);
+	});
+
+	it("sets deprecated with message", () => {
+		const field = eg.string().deprecated("use X instead");
+		expect(field._options.deprecated).toBe("use X instead");
+	});
+
+	it("sets deprecated with default message", () => {
+		const field = eg.string().deprecated();
+		expect(field._options.deprecated).toBe("This environment variable is deprecated");
+	});
+
+	it("sets defaultFactory and marks optional", () => {
+		const factory = () => 42;
+		const field = eg.number().default(factory);
+		expect(field._options.defaultFactory).toBe(factory);
+		expect(field._options.defaultValue).toBeUndefined();
+		expect(field._options.isRequired).toBe(false);
+	});
+
+	it("sets defaultValue and marks optional", () => {
+		const field = eg.number().default(42);
+		expect(field._options.defaultValue).toBe(42);
+		expect(field._options.defaultFactory).toBeUndefined();
+		expect(field._options.isRequired).toBe(false);
+	});
+});

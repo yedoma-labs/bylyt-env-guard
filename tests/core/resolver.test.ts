@@ -25,3 +25,37 @@ describe("resolveSources", () => {
 		expect(result.raw.BAR).toBeUndefined();
 	});
 });
+
+describe("aliases", () => {
+	it("resolves from alias when primary key is missing", () => {
+		const schema = {
+			PORT: eg.number().aliases("APP_PORT", "HTTP_PORT"),
+		};
+		const result = resolveSources(schema, [{ APP_PORT: "8080" }]);
+		expect(result.raw.PORT).toBe("8080");
+	});
+
+	it("uses first available alias when multiple exist", () => {
+		const schema = {
+			PORT: eg.number().aliases("APP_PORT", "HTTP_PORT"),
+		};
+		const result = resolveSources(schema, [{ HTTP_PORT: "3000" }]);
+		expect(result.raw.PORT).toBe("3000");
+	});
+
+	it("prefers first alias when multiple are present", () => {
+		const schema = {
+			PORT: eg.number().aliases("APP_PORT", "HTTP_PORT"),
+		};
+		const result = resolveSources(schema, [{ APP_PORT: "8080", HTTP_PORT: "3000" }]);
+		expect(result.raw.PORT).toBe("8080");
+	});
+
+	it("primary key takes precedence over aliases", () => {
+		const schema = {
+			PORT: eg.number().aliases("APP_PORT", "HTTP_PORT"),
+		};
+		const result = resolveSources(schema, [{ PORT: "9000", APP_PORT: "8080" }]);
+		expect(result.raw.PORT).toBe("9000");
+	});
+});
