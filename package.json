@@ -44,6 +44,10 @@
     "dotenv",
     "config"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yedoma-labs/bylyt-env-guard"
+  },
   "author": "",
   "license": "MIT",
   "simple-git-hooks": {
