@@ -1,10 +1,24 @@
-export type SchemaFieldKind = "string" | "number" | "boolean" | "enum" | "url" | "port" | "array";
+export type SchemaFieldKind =
+	| "string"
+	| "number"
+	| "boolean"
+	| "enum"
+	| "url"
+	| "port"
+	| "array"
+	| "integer"
+	| "email"
+	| "json"
+	| "date";
+
+export type ArrayItemKind = "string" | "number" | "integer" | "boolean";
 
 export interface SchemaFieldOptions {
 	kind: SchemaFieldKind;
 	isRequired: boolean;
 	isSensitive: boolean;
 	defaultValue?: unknown;
+	defaultFactory?: () => unknown;
 	enumValues?: readonly string[];
 	separator?: string;
 	minValue?: number;
@@ -12,6 +26,13 @@ export interface SchemaFieldOptions {
 	minLength?: number;
 	maxLength?: number;
 	pattern?: RegExp;
+	aliases?: string[];
+	allowedProtocols?: string[];
+	caseInsensitive?: boolean;
+	arrayItemKind?: ArrayItemKind;
+	customValidator?: (value: unknown) => string | null;
+	transform?: (value: unknown) => unknown;
+	deprecated?: string;
 }
 
 export interface SchemaField<T = unknown> {

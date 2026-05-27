@@ -18,28 +18,38 @@ export function validateAndCoerce(
 
 		// Handle missing values
 		if (raw === undefined) {
+			if (opts.defaultFactory !== undefined) {
+				result[key] = opts.defaultFactory();
+				continue;
+			}
 			if (opts.defaultValue !== undefined) {
 				result[key] = opts.defaultValue;
 				continue;
 			}
 			if (opts.isRequired) {
-				failures.push({ field: key, message: "is required but missing" });
+				failures.push({ field: key, message: "is required but missing", code: "MISSING" });
 				continue;
 			}
 			result[key] = undefined;
 			continue;
 		}
 
+		// Warn about deprecated fields
+		if (opts.deprecated) {
+			console.warn(`[env-guard] Warning: "${key}" is deprecated. ${opts.deprecated}`);
+		}
+
 		// Coerce
 		let coerced: unknown;
 		try {
-			coerced = coerce(raw, opts.kind, opts.separator);
+			coerced = coerce(raw, opts.kind, opts.separator, opts.arrayItemKind);
 		} catch (err) {
 			if (err instanceof CoercionError) {
 				failures.push({
 					field: key,
 					message: err.message,
 					value: maskValue(raw, opts),
+					code: "INVALID_TYPE",
 				});
 				continue;
 			}
@@ -51,6 +61,11 @@ export function validateAndCoerce(
 		if (failure) {
 			failures.push(failure);
 			continue;
+		}
+
+		// Apply transform
+		if (opts.transform) {
+			coerced = opts.transform(coerced);
 		}
 
 		result[key] = coerced;

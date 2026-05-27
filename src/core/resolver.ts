@@ -14,10 +14,17 @@ export function resolveSources(schema: SchemaDefinition, sources: EnvSource[]): 
 		Object.assign(merged, parsed);
 	}
 
-	// Only pick keys defined in schema
+	// Pick keys defined in schema; fall back to aliases if primary key is absent
 	const raw: Record<string, string | undefined> = {};
-	for (const key of Object.keys(schema)) {
-		raw[key] = merged[key];
+	for (const [key, field] of Object.entries(schema)) {
+		if (merged[key] !== undefined) {
+			raw[key] = merged[key];
+		} else if (field._options.aliases && field._options.aliases.length > 0) {
+			const alias = field._options.aliases.find((a) => merged[a] !== undefined);
+			raw[key] = alias !== undefined ? merged[alias] : undefined;
+		} else {
+			raw[key] = undefined;
+		}
 	}
 
 	return { raw };

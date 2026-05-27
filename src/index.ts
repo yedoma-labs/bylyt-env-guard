@@ -5,7 +5,7 @@ import type { InferEnv, SchemaDefinition } from "./schema/types.js";
 
 export { EnvValidationError } from "./errors/validation-error.js";
 export { eg } from "./schema/builder.js";
-export type { InferEnv, SchemaDefinition, SchemaField } from "./schema/types.js";
+export type { ArrayItemKind, InferEnv, SchemaDefinition, SchemaField } from "./schema/types.js";
 export type { ValidationFailure } from "./schema/validators.js";
 
 export interface CreateEnvOptions<T extends SchemaDefinition> {

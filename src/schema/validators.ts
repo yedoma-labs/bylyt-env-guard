@@ -4,6 +4,7 @@ export interface ValidationFailure {
 	field: string;
 	message: string;
 	value?: string;
+	code?: string;
 }
 
 export function validateField(
@@ -13,17 +14,53 @@ export function validateField(
 ): ValidationFailure | null {
 	const { kind } = options;
 
-	if (kind === "string" || kind === "url" || kind === "enum") {
+	if (kind === "string" || kind === "email") {
 		return validateString(key, value as string, options);
 	}
-	if (kind === "number" || kind === "port") {
+	if (kind === "url") {
+		return validateUrl(key, value as string, options);
+	}
+	if (kind === "enum") {
+		return validateEnum(key, value as string, options);
+	}
+	if (kind === "number" || kind === "port" || kind === "integer") {
 		return validateNumber(key, value as number, options);
 	}
 	if (kind === "boolean") {
-		return null;
+		return runCustomValidator(key, value, options);
 	}
 	if (kind === "array") {
-		return validateArray(key, value as string[], options);
+		return validateArray(key, value as unknown[], options);
+	}
+	if (kind === "json") {
+		return runCustomValidator(key, value, options);
+	}
+	if (kind === "date") {
+		return validateDate(key, value as Date, options);
+	}
+	return null;
+}
+
+function maskVal(value: string | undefined, sensitive: boolean): string | undefined {
+	if (value === undefined) return undefined;
+	return sensitive ? "***" : value;
+}
+
+function runCustomValidator(
+	key: string,
+	value: unknown,
+	options: SchemaFieldOptions,
+): ValidationFailure | null {
+	if (options.customValidator) {
+		const msg = options.customValidator(value);
+		if (msg !== null) {
+			return {
+				field: key,
+				message: msg,
+				value: maskVal(String(value), options.isSensitive),
+				code: "CUSTOM",
+			};
+		}
 	}
 	return null;
 }
@@ -33,24 +70,14 @@ function validateString(
 	value: string,
 	options: SchemaFieldOptions,
 ): ValidationFailure | null {
-	if (options.kind === "url") {
-		try {
-			new URL(value);
-		} catch {
+	if (options.kind === "email") {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(value)) {
 			return {
 				field: key,
-				message: "must be a valid URL",
-				value: options.isSensitive ? "***" : value,
-			};
-		}
-	}
-
-	if (options.kind === "enum" && options.enumValues) {
-		if (!options.enumValues.includes(value)) {
-			return {
-				field: key,
-				message: `must be one of: ${options.enumValues.join(", ")}`,
-				value: options.isSensitive ? "***" : value,
+				message: "must be a valid email address",
+				value: maskVal(value, options.isSensitive),
+				code: "INVALID_EMAIL",
 			};
 		}
 	}
@@ -59,7 +86,8 @@ function validateString(
 		return {
 			field: key,
 			message: `must be at least ${options.minLength} characters`,
-			value: options.isSensitive ? "***" : value,
+			value: maskVal(value, options.isSensitive),
+			code: "MIN_LENGTH",
 		};
 	}
 
@@ -67,7 +95,8 @@ function validateString(
 		return {
 			field: key,
 			message: `must be at most ${options.maxLength} characters`,
-			value: options.isSensitive ? "***" : value,
+			value: maskVal(value, options.isSensitive),
+			code: "MAX_LENGTH",
 		};
 	}
 
@@ -75,11 +104,67 @@ function validateString(
 		return {
 			field: key,
 			message: `must match pattern ${options.pattern}`,
-			value: options.isSensitive ? "***" : value,
+			value: maskVal(value, options.isSensitive),
+			code: "PATTERN",
 		};
 	}
 
-	return null;
+	return runCustomValidator(key, value, options);
+}
+
+function validateUrl(
+	key: string,
+	value: string,
+	options: SchemaFieldOptions,
+): ValidationFailure | null {
+	let parsed: URL;
+	try {
+		parsed = new URL(value);
+	} catch {
+		return {
+			field: key,
+			message: "must be a valid URL",
+			value: maskVal(value, options.isSensitive),
+			code: "INVALID_URL",
+		};
+	}
+
+	if (options.allowedProtocols && options.allowedProtocols.length > 0) {
+		const proto = parsed.protocol.replace(/:$/, "");
+		if (!options.allowedProtocols.includes(proto)) {
+			return {
+				field: key,
+				message: `must use one of these protocols: ${options.allowedProtocols.join(", ")}`,
+				value: maskVal(value, options.isSensitive),
+				code: "INVALID_PROTOCOL",
+			};
+		}
+	}
+
+	return runCustomValidator(key, value, options);
+}
+
+function validateEnum(
+	key: string,
+	value: string,
+	options: SchemaFieldOptions,
+): ValidationFailure | null {
+	if (options.enumValues) {
+		const compare = options.caseInsensitive ? value.toLowerCase() : value;
+		const match = options.enumValues.some((v) =>
+			options.caseInsensitive ? v.toLowerCase() === compare : v === compare,
+		);
+		if (!match) {
+			return {
+				field: key,
+				message: `must be one of: ${options.enumValues.join(", ")}`,
+				value: maskVal(value, options.isSensitive),
+				code: "INVALID_ENUM",
+			};
+		}
+	}
+
+	return runCustomValidator(key, value, options);
 }
 
 function validateNumber(
@@ -91,35 +176,55 @@ function validateNumber(
 		return {
 			field: key,
 			message: `must be at least ${options.minValue}`,
-			value: options.isSensitive ? "***" : String(value),
+			value: maskVal(String(value), options.isSensitive),
+			code: "MIN_VALUE",
 		};
 	}
 	if (options.maxValue !== undefined && value > options.maxValue) {
 		return {
 			field: key,
 			message: `must be at most ${options.maxValue}`,
-			value: options.isSensitive ? "***" : String(value),
+			value: maskVal(String(value), options.isSensitive),
+			code: "MAX_VALUE",
 		};
 	}
-	return null;
+	return runCustomValidator(key, value, options);
+}
+
+function validateDate(
+	key: string,
+	value: Date,
+	options: SchemaFieldOptions,
+): ValidationFailure | null {
+	if (Number.isNaN(value.getTime())) {
+		return {
+			field: key,
+			message: "must be a valid date",
+			value: maskVal(String(value), options.isSensitive),
+			code: "INVALID_DATE",
+		};
+	}
+	return runCustomValidator(key, value, options);
 }
 
 function validateArray(
 	key: string,
-	value: string[],
+	value: unknown[],
 	options: SchemaFieldOptions,
 ): ValidationFailure | null {
 	if (options.minLength !== undefined && value.length < options.minLength) {
 		return {
 			field: key,
 			message: `must have at least ${options.minLength} items`,
+			code: "MIN_LENGTH",
 		};
 	}
 	if (options.maxLength !== undefined && value.length > options.maxLength) {
 		return {
 			field: key,
 			message: `must have at most ${options.maxLength} items`,
+			code: "MAX_LENGTH",
 		};
 	}
-	return null;
+	return runCustomValidator(key, value, options);
 }
