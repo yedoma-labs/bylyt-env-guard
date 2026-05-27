@@ -13,7 +13,7 @@ export function parseDotenv(content: string): Record<string, string> {
 	let i = 0;
 
 	while (i < lines.length) {
-		const line = lines[i]?.trim();
+		const line = lines[i]?.trim() ?? "";
 		i++;
 
 		if (line === "" || line.startsWith("#")) continue;
