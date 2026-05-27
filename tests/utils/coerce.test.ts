@@ -47,6 +47,11 @@ describe("coerce", () => {
 		expect(coerce("a|b|c", "array", "|")).toEqual(["a", "b", "c"]);
 	});
 
+	it("returns raw for unknown kind", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing fallthrough
+		expect(coerce("val", "unknown" as any)).toBe("val");
+	});
+
 	it("filters empty entries", () => {
 		expect(coerce("a,,b,", "array")).toEqual(["a", "b"]);
 	});

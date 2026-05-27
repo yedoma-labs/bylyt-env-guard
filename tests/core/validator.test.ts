@@ -45,6 +45,32 @@ describe("validateAndCoerce", () => {
 		}
 	});
 
+	it("collects coercion errors as failures", () => {
+		const schema = { PORT: eg.number().required() };
+		try {
+			validateAndCoerce(schema, { raw: { PORT: "not-a-number" } });
+			expect.unreachable();
+		} catch (err) {
+			expect(err).toBeInstanceOf(EnvValidationError);
+			const failure = (err as EnvValidationError).failures[0];
+			if (!failure) throw new Error("No failure");
+			expect(failure.field).toBe("PORT");
+			expect(failure.value).toBe("not-a-number");
+		}
+	});
+
+	it("masks sensitive coercion errors", () => {
+		const schema = { TOKEN: eg.number().required().sensitive() };
+		try {
+			validateAndCoerce(schema, { raw: { TOKEN: "secret" } });
+			expect.unreachable();
+		} catch (err) {
+			const failure = (err as EnvValidationError).failures[0];
+			if (!failure) throw new Error("No failure");
+			expect(failure.value).toBe("***");
+		}
+	});
+
 	it("masks sensitive values in errors", () => {
 		const schema = { KEY: eg.string().sensitive().minLength(20) };
 		try {

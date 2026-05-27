@@ -51,6 +51,19 @@ describe("validators", () => {
 		expect(validateField("X", 8080, opts)).toBeNull();
 	});
 
+	it("passes boolean", () => {
+		expect(validateField("X", true, { ...base, kind: "boolean" })).toBeNull();
+	});
+
+	it("validates array min/max items", () => {
+		const opts: SchemaFieldOptions = { ...base, kind: "array", minLength: 2, maxLength: 4 };
+		expect(validateField("X", ["a", "b", "c"], opts)).toBeNull();
+		expect(validateField("X", ["a"], opts)).not.toBeNull();
+		expect(validateField("X", ["a"], opts)?.message).toContain("at least 2");
+		expect(validateField("X", ["a", "b", "c", "d", "e"], opts)).not.toBeNull();
+		expect(validateField("X", ["a", "b", "c", "d", "e"], opts)?.message).toContain("at most 4");
+	});
+
 	it("masks sensitive values", () => {
 		const result = validateField("X", "ab", { ...base, isSensitive: true, minLength: 5 });
 		expect(result?.value).toBe("***");
