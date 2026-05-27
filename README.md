@@ -135,7 +135,7 @@ try {
 
 ```bash
 git clone https://github.com/yedoma-labs/bylyt-env-guard.git
-cd env-guard
+cd bylyt-env-guard
 bun install
 ```
 
