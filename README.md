@@ -1,5 +1,9 @@
 # @yedoma-labs/bylyt-env-guard
 
+[![CI](https://github.com/yedoma-labs/bylyt-env-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/yedoma-labs/bylyt-env-guard/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
+[![npm downloads](https://img.shields.io/npm/dm/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
+
 Type-safe, zero-dependency environment variable validation for Node.js. Fail fast with clear error messages.
 
 ## Features
