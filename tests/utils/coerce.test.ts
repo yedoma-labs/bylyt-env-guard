@@ -83,16 +83,16 @@ describe("coerce", () => {
 		expect(coerce("42", "integer")).toBe(42);
 	});
 
-	it("coerces integer from decimal (truncates)", () => {
-		expect(coerce("42.5", "integer")).toBe(42);
+	it("throws on decimal integer", () => {
+		expect(() => coerce("42.5", "integer")).toThrow(CoercionError);
 	});
 
 	it("throws on non-numeric integer", () => {
 		expect(() => coerce("abc", "integer")).toThrow(CoercionError);
 	});
 
-	it("coerces port from decimal (truncates)", () => {
-		expect(coerce("8080.5", "port")).toBe(8080);
+	it("throws on decimal port", () => {
+		expect(() => coerce("8080.5", "port")).toThrow(CoercionError);
 	});
 
 	it("coerces array of numbers", () => {

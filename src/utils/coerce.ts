@@ -18,7 +18,7 @@ export function coerce(
 
 		case "number": {
 			const n = Number(raw);
-			if (Number.isNaN(n)) {
+			if (!Number.isFinite(n)) {
 				throw new CoercionError(raw, "number");
 			}
 			return n;
@@ -26,8 +26,8 @@ export function coerce(
 
 		case "integer":
 		case "port": {
-			const n = Number.parseInt(raw, 10);
-			if (Number.isNaN(n)) {
+			const n = Number(raw);
+			if (!Number.isFinite(n) || !Number.isInteger(n)) {
 				throw new CoercionError(raw, kind === "integer" ? "integer" : "port (integer)");
 			}
 			return n;
@@ -74,12 +74,14 @@ function coerceArrayItem(item: string, kind: ArrayItemKind, rawArray: string): u
 	switch (kind) {
 		case "number": {
 			const n = Number(item);
-			if (Number.isNaN(n)) throw new CoercionError(rawArray, `array of number (item: "${item}")`);
+			if (!Number.isFinite(n))
+				throw new CoercionError(rawArray, `array of number (item: "${item}")`);
 			return n;
 		}
 		case "integer": {
-			const n = Number.parseInt(item, 10);
-			if (Number.isNaN(n)) throw new CoercionError(rawArray, `array of integer (item: "${item}")`);
+			const n = Number(item);
+			if (!Number.isFinite(n) || !Number.isInteger(n))
+				throw new CoercionError(rawArray, `array of integer (item: "${item}")`);
 			return n;
 		}
 		case "boolean": {
