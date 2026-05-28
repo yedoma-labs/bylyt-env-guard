@@ -1,7 +1,7 @@
 import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { eg } from "../../src";
 import { watchEnv } from "../../src/core/watcher.js";
 
@@ -17,8 +17,8 @@ describe("watchEnv", () => {
 		);
 		handle.stop();
 		expect(callback).toHaveBeenCalledOnce();
-		expect(callback.mock.calls[0]![0].env?.PORT).toBe(3000);
-		expect(callback.mock.calls[0]![0].error).toBeNull();
+		expect(callback.mock.calls[0]?.[0].env?.PORT).toBe(3000);
+		expect(callback.mock.calls[0]?.[0].error).toBeNull();
 	});
 
 	it("calls callback with error when validation fails", () => {
@@ -32,8 +32,8 @@ describe("watchEnv", () => {
 		);
 		handle.stop();
 		expect(callback).toHaveBeenCalledOnce();
-		expect(callback.mock.calls[0]![0].env).toBeNull();
-		expect(callback.mock.calls[0]![0].error).not.toBeNull();
+		expect(callback.mock.calls[0]?.[0].env).toBeNull();
+		expect(callback.mock.calls[0]?.[0].error).not.toBeNull();
 	});
 
 	it("returns a stop handle with no file sources", () => {

@@ -43,11 +43,13 @@ export function watchEnv<T extends SchemaDefinition>(
 			const result = validateAndCoerce(schema, resolved);
 			callback({ env: Object.freeze(result) as Readonly<InferEnv<T>>, error: null });
 		} catch (err) {
-			if (err instanceof EnvValidationError) {
-				callback({ env: null, error: err });
-			} else {
-				throw err;
-			}
+			const validationErr =
+				err instanceof EnvValidationError
+					? err
+					: new EnvValidationError([
+							{ field: "(internal)", message: String(err), code: "INTERNAL" },
+						]);
+			callback({ env: null, error: validationErr });
 		}
 	}
 
@@ -71,8 +73,8 @@ export function watchEnv<T extends SchemaDefinition>(
 		try {
 			const watcher = watch(resolve(filePath), handleChange);
 			watchers.push(watcher);
-		} catch {
-			// File may not exist yet; skip watching it
+		} catch (err) {
+			console.warn(`[env-guard] Failed to watch file: ${filePath}`, err);
 		}
 	}
 

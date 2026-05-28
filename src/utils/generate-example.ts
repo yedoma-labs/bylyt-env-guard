@@ -12,16 +12,14 @@ export function generateEnvExample(schema: SchemaDefinition): string {
 			const envPrefix = key.toUpperCase() + sep;
 			lines.push(`# ${key} (array of objects, indexed with ${sep}0${sep}, ${sep}1${sep}, ...)`);
 			for (const subKey of Object.keys(opts.subSchema)) {
-				const subOpts = opts.subSchema[subKey]!._options;
-				lines.push(
-					`${envPrefix}0${sep}${subKey}=${
-						subOpts.example !== undefined
-							? String(subOpts.example)
-							: subOpts.defaultValue !== undefined
-								? String(subOpts.defaultValue)
-								: ""
-					}`,
-				);
+				const subOpts = opts.subSchema[subKey]?._options;
+				const exampleVal =
+					subOpts?.example !== undefined
+						? String(subOpts.example)
+						: subOpts?.defaultValue !== undefined
+							? String(subOpts.defaultValue)
+							: "";
+				lines.push(`${envPrefix}0${sep}${subKey}=${exampleVal}`);
 			}
 			lines.push(`# ${envPrefix}1${sep}... (add more items as needed)`);
 			lines.push("");

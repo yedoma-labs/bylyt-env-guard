@@ -4,312 +4,349 @@
 [![npm version](https://img.shields.io/npm/v/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
 [![npm downloads](https://img.shields.io/npm/dm/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
 
-Type-safe, zero-dependency environment variable validation for Node.js. Fail fast with clear error messages.
+Type-safe, zero-dependency environment variable validation for Node.js. Fail fast with clear, collected error messages.
 
 ## Features
 
-- 🔒 **Type-safe** - Full TypeScript inference from schema definition
-- 📦 **Zero dependencies** - Built-in `.env` parser, no `dotenv` needed
-- 💥 **Fail-fast** - Throws all validation errors at once on startup
-- 🎭 **Sensitive masking** - Mark secrets to hide values in error output
-- 🔄 **Auto-coercion** - Strings to numbers, booleans, arrays automatically
-- 📁 **Multi-source** - `.env` files + `process.env` with configurable priority
-- 🌍 **Environment profiles** - Profile-based defaults (dev, test, prod)
-- 🏗️ **Nested variables** - Group related vars with `eg.group()`
-- 📊 **Array of objects** - Read indexed vars like `DB_0_HOST`, `DB_1_HOST` as typed arrays
-- 🗂️ **Record fields** - Capture all vars matching a prefix/pattern
-- 🏷️ **Prefix support** - Strip common prefixes like `APP_` or `NEXT_PUBLIC_`
-- 🔍 **Strict mode** - Warn about unknown environment variables
-- 📝 **Generate .env.example** - Auto-generate example files from schema
-- 📄 **Markdown docs** - Generate documentation tables from schema
-- 👀 **Watch mode** - Re-validate automatically when .env files change
-- ❓ **Conditional required** - Make fields required based on other fields
-- 🔐 **Immutable result** - Returned env object is deeply frozen
+- 🔒 **Type-safe** — Full TypeScript inference, result is `Readonly<...>` and deep-frozen
+- 📦 **Zero dependencies** — Built-in `.env` parser, no dotenv needed
+- 💥 **Fail-fast** — All validation errors collected and thrown at once
+- 🔄 **Auto-coercion** — Strings to numbers, booleans, dates, JSON, arrays automatically
+- 🎭 **Sensitive masking** — Mark secrets to hide values in error output
+- 📁 **Multi-source** — `.env` files + `process.env` with configurable priority
+- 🏗️ **Nested variables** — Group related vars (`DB__HOST`, `DB__PORT`) into typed objects
+- 🔁 **Watch mode** — Re-validate automatically when `.env` files change
+- 📝 **Auto-documentation** — Generate `.env.example` and markdown docs from schema
 
 ## Install
 
 ```bash
 npm install @yedoma-labs/bylyt-env-guard
-# or
 bun add @yedoma-labs/bylyt-env-guard
-# or
 pnpm add @yedoma-labs/bylyt-env-guard
 ```
 
-## Usage
+## Quick Start
 
 ```typescript
 import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
 
-const env = createEnv({
+export const env = createEnv({
   schema: {
-    NODE_ENV: eg.enum(["development", "staging", "production"]),
+    NODE_ENV: eg.enum(["development", "staging", "production"] as const),
     PORT: eg.port().default(3000),
-    DATABASE_URL: eg.url().required(),
-    API_KEY: eg.string().minLength(16).sensitive(),
+    DATABASE_URL: eg.url().sensitive(),
+    API_KEY: eg.string().minLength(32).sensitive(),
     DEBUG: eg.boolean().default(false),
-    ALLOWED_ORIGINS: eg.array().separator(",").optional(),
-    RETRY_COUNT: eg.number().min(0).max(10).default(3),
   },
 });
 
-// `env` is fully typed:
+// env is fully typed and immutable:
 // {
 //   NODE_ENV: "development" | "staging" | "production"
 //   PORT: number
 //   DATABASE_URL: string
 //   API_KEY: string
 //   DEBUG: boolean
-//   ALLOWED_ORIGINS: string[] | undefined
-//   RETRY_COUNT: number
 // }
 ```
 
-## Schema Types
+## Real-World Examples
 
-| Builder | Coerces to | Description |
-|---|---|---|
-| `eg.string()` | `string` | Any string value |
-| `eg.number()` | `number` | Parsed via `Number()` |
-| `eg.integer()` | `number` | Integer value |
-| `eg.boolean()` | `boolean` | `true/1/yes/on` → `true`, `false/0/no/off` → `false` |
-| `eg.enum([...])` | union type | Must be one of the specified values |
-| `eg.url()` | `string` | Validated via `new URL()` |
-| `eg.port()` | `number` | Integer between 1–65535 |
-| `eg.email()` | `string` | Validated email address |
-| `eg.json()` | `T` | Parsed JSON with type inference |
-| `eg.date()` | `Date` | Parsed date string |
-| `eg.array()` | `string[]` | Split by separator (default: `,`) |
-| `eg.group({...})` | `object` | Nested group of fields |
-| `eg.arrayOfGroups({...})` | `object[]` | Indexed array of nested objects |
-| `eg.record(prefix)` | `Record<string, string>` | Capture all vars matching a prefix or pattern |
+### Express / Fastify API Server
 
-## Field Modifiers
+A complete example for a typical Node.js API. Create `src/env.ts`:
 
 ```typescript
-// Status & defaults
-eg.string().required()              // Required (default)
-eg.string().optional()              // May be undefined
-eg.string().default("val")          // Default value, implies optional
-eg.string().default(() => "val")    // Default factory function
-eg.string().sensitive()             // Mask value in error output
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
 
-// Documentation
-eg.string().describe("API key")     // Description for .env.example
-eg.string().example("sk_live_123")  // Example value for docs
+export const env = createEnv({
+  schema: {
+    // Server
+    NODE_ENV: eg.enum(["development", "production", "test"] as const),
+    PORT: eg.port().default(3000).describe("HTTP port the API server listens on"),
+    HOST: eg.string().default("0.0.0.0").describe("Bind address"),
 
-// Aliases & deprecation
-eg.string().aliases("OLD_NAME")     // Alternative env var names
-eg.string().deprecated("use X")     // Mark as deprecated with message
+    // Database
+    DATABASE_URL: eg.url()
+      .protocols("postgres", "postgresql")
+      .sensitive()
+      .describe("PostgreSQL connection string"),
+    DATABASE_POOL_MIN: eg.integer().min(1).max(20).default(2),
+    DATABASE_POOL_MAX: eg.integer().min(1).max(100).default(10),
 
-// Conditional
-eg.url().requiredIf((raw) => raw.USE_DB === "true") // Conditionally required
+    // Auth
+    JWT_SECRET: eg.string().minLength(32).sensitive(),
+    JWT_EXPIRES_IN: eg.string().default("7d").describe("e.g. 60, 2d, 10h, 7d"),
 
-// Custom logic
-eg.string().validate((v) => v.startsWith("sk_") ? null : "must start with sk_")
-eg.string().transform((v) => v.toUpperCase())
+    // External APIs
+    STRIPE_SECRET_KEY: eg.string().sensitive().requiredIf((raw) => raw.NODE_ENV === "production"),
+    STRIPE_WEBHOOK_SECRET: eg.string().sensitive().optional(),
 
-// String-specific
-eg.string().minLength(3)
-eg.string().maxLength(100)
-eg.string().pattern(/^[A-Z]+$/)
+    // Feature flags
+    FEATURE_NEW_DASHBOARD: eg.boolean().default(false),
+    RATE_LIMIT_RPM: eg.integer().min(10).max(10000).default(100),
 
-// Number-specific
-eg.number().min(0)
-eg.number().max(100)
+    // Logging
+    LOG_LEVEL: eg.enum(["debug", "info", "warn", "error"] as const).default("info"),
+    LOG_FORMAT: eg.enum(["json", "pretty"] as const).default("json"),
+  },
+  profiles: {
+    development: { LOG_LEVEL: "debug", LOG_FORMAT: "pretty", DATABASE_POOL_MIN: "1" },
+    test:        { LOG_LEVEL: "error", DATABASE_POOL_MAX: "2" },
+  },
+});
 
-// Array-specific
-eg.array().separator("|")
-eg.array().of("number")           // Typed array items
-eg.array().minLength(1)           // Min items
-eg.array().maxLength(10)          // Max items
-
-// URL-specific
-eg.url().protocols("https", "wss")
-
-// Enum-specific
-eg.enum([...]).caseInsensitive()
+// Usage: import { env } from "./env"
+// env.PORT         → number
+// env.DATABASE_URL → string
+// env.NODE_ENV     → "development" | "production" | "test"
 ```
 
-## Custom Sources
+This file is the single source of truth for all configuration. Import `env` anywhere in your app — TypeScript will catch any typos.
 
-By default, `env-guard` reads from `process.env`. Override with custom sources - later sources take priority:
+---
+
+### Next.js Application
+
+Next.js has server-side and client-side env vars. Use two separate schemas:
 
 ```typescript
-const env = createEnv({
-  schema: { /* ... */ },
-  sources: [
-    ".env",              // .env file (silently skipped if missing)
-    ".env.local",        // local overrides
-    process.env,         // process.env wins
-  ],
+// lib/env/server.ts — only imported in server components / API routes
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const serverEnv = createEnv({
+  schema: {
+    DATABASE_URL: eg.url().sensitive(),
+    NEXTAUTH_SECRET: eg.string().minLength(32).sensitive(),
+    NEXTAUTH_URL: eg.url(),
+    RESEND_API_KEY: eg.string().sensitive(),
+    STRIPE_SECRET_KEY: eg.string().sensitive(),
+  },
+  sources: [process.env],
+});
+
+// lib/env/client.ts — safe for browser bundles
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const clientEnv = createEnv({
+  schema: {
+    NEXT_PUBLIC_APP_URL: eg.url(),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: eg.string(),
+    NEXT_PUBLIC_POSTHOG_KEY: eg.string().optional(),
+  },
+  sources: [process.env],
+  prefix: "NEXT_PUBLIC_",  // reads NEXT_PUBLIC_APP_URL as APP_URL etc. — optional
 });
 ```
 
-## Error Output
+---
 
-When validation fails, all errors are reported at once:
+### Multi-Service Monorepo (Database + Redis + S3)
 
-```
-❌ Environment validation failed:
-
-  • DATABASE_URL: is required but missing
-  • PORT: must be at least 1 (got: 0)
-  • API_KEY: must be at least 16 characters (got: ***)
-```
-
-## Environment Profiles
-
-Define profile-based defaults for different environments:
+Group related variables with `eg.group()`:
 
 ```typescript
-const env = createEnv({
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const env = createEnv({
   schema: {
-    LOG_LEVEL: eg.enum(["debug", "info", "warn", "error"]),
-    DATABASE_URL: eg.url(),
+    NODE_ENV: eg.enum(["development", "production"] as const),
+
+    // Reads DB__HOST, DB__PORT, DB__NAME, DB__USER, DB__PASSWORD
+    db: eg.group({
+      HOST: eg.string().default("localhost"),
+      PORT: eg.port().default(5432),
+      NAME: eg.string().default("myapp"),
+      USER: eg.string().default("postgres"),
+      PASSWORD: eg.string().sensitive(),
+    }),
+
+    // Reads REDIS__HOST, REDIS__PORT, REDIS__PASSWORD
+    redis: eg.group({
+      HOST: eg.string().default("localhost"),
+      PORT: eg.port().default(6379),
+      PASSWORD: eg.string().sensitive().optional(),
+    }),
+
+    // Reads S3__BUCKET, S3__REGION, S3__ACCESS_KEY_ID, S3__SECRET_ACCESS_KEY
+    s3: eg.group({
+      BUCKET: eg.string(),
+      REGION: eg.string().default("eu-central-1"),
+      ACCESS_KEY_ID: eg.string().sensitive(),
+      SECRET_ACCESS_KEY: eg.string().sensitive(),
+    }),
+  },
+});
+
+// env.db.HOST     → string
+// env.db.PORT     → number
+// env.redis.HOST  → string
+// env.s3.BUCKET   → string
+```
+
+Your `.env` file for this schema:
+
+```env
+DB__HOST=localhost
+DB__PORT=5432
+DB__NAME=myapp
+DB__USER=postgres
+DB__PASSWORD=supersecret
+
+REDIS__HOST=localhost
+REDIS__PORT=6379
+
+S3__BUCKET=my-bucket
+S3__REGION=eu-central-1
+S3__ACCESS_KEY_ID=AKIA...
+S3__SECRET_ACCESS_KEY=secret
+```
+
+---
+
+### Multiple Server Instances (Array of Objects)
+
+When you have a dynamic list of servers or upstreams:
+
+```typescript
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const env = createEnv({
+  schema: {
+    // Reads UPSTREAM_0_HOST, UPSTREAM_0_PORT, UPSTREAM_1_HOST, UPSTREAM_1_PORT, ...
+    upstreams: eg.arrayOfGroups({
+      HOST: eg.string(),
+      PORT: eg.port(),
+      WEIGHT: eg.integer().min(1).max(100).default(1),
+    }),
+  },
+  sources: [{
+    UPSTREAM_0_HOST: "server1.internal",
+    UPSTREAM_0_PORT: "8080",
+    UPSTREAM_1_HOST: "server2.internal",
+    UPSTREAM_1_PORT: "8081",
+    UPSTREAM_1_WEIGHT: "2",
+  }],
+});
+
+// env.upstreams → [
+//   { HOST: "server1.internal", PORT: 8080, WEIGHT: 1 },
+//   { HOST: "server2.internal", PORT: 8081, WEIGHT: 2 },
+// ]
+```
+
+---
+
+### Capturing Dynamic Keys (`eg.record`)
+
+Capture all env vars matching a pattern — useful for HTTP headers, feature flags, or plugin configs:
+
+```typescript
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const env = createEnv({
+  schema: {
+    PORT: eg.port().default(3000),
+
+    // Captures HTTP_HEADER_ACCEPT, HTTP_HEADER_X_API_VERSION, etc.
+    // Returns { ACCEPT: "json", X_API_VERSION: "v2" } (prefix stripped)
+    defaultHeaders: eg.record("HTTP_HEADER_"),
+
+    // Captures all FEATURE_* vars as-is
+    features: eg.record(/^FEATURE_/),
+  },
+  sources: [{
+    PORT: "3000",
+    HTTP_HEADER_ACCEPT: "application/json",
+    HTTP_HEADER_X_API_VERSION: "v2",
+    FEATURE_DARK_MODE: "true",
+    FEATURE_BETA_DASHBOARD: "false",
+  }],
+});
+
+// env.defaultHeaders → { ACCEPT: "application/json", X_API_VERSION: "v2" }
+// env.features       → { FEATURE_DARK_MODE: "true", FEATURE_BETA_DASHBOARD: "false" }
+```
+
+---
+
+### Conditional Required Fields
+
+Some fields only make sense depending on other settings:
+
+```typescript
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const env = createEnv({
+  schema: {
+    QUEUE_BACKEND: eg.enum(["memory", "redis", "sqs"] as const).default("memory"),
+
+    // Only required when QUEUE_BACKEND=redis
+    REDIS_URL: eg.url()
+      .sensitive()
+      .requiredIf((raw) => raw.QUEUE_BACKEND === "redis"),
+
+    // Only required when QUEUE_BACKEND=sqs
+    AWS_SQS_QUEUE_URL: eg.url()
+      .requiredIf((raw) => raw.QUEUE_BACKEND === "sqs"),
+    AWS_ACCESS_KEY_ID: eg.string()
+      .sensitive()
+      .requiredIf((raw) => raw.QUEUE_BACKEND === "sqs"),
+    AWS_SECRET_ACCESS_KEY: eg.string()
+      .sensitive()
+      .requiredIf((raw) => raw.QUEUE_BACKEND === "sqs"),
+  },
+});
+```
+
+---
+
+### Environment Profiles
+
+Provide sensible defaults per environment without `.env` file duplication:
+
+```typescript
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const env = createEnv({
+  schema: {
+    LOG_LEVEL: eg.enum(["debug", "info", "warn", "error"] as const),
+    DB_POOL_SIZE: eg.integer().min(1).max(50),
+    CACHE_TTL_SECONDS: eg.integer().min(0),
+    ENABLE_QUERY_LOGGING: eg.boolean(),
   },
   profiles: {
     development: {
       LOG_LEVEL: "debug",
-      DATABASE_URL: "postgres://localhost/myapp_dev",
-    },
-    test: {
-      LOG_LEVEL: "warn",
-      DATABASE_URL: "postgres://localhost/myapp_test",
+      DB_POOL_SIZE: "2",
+      CACHE_TTL_SECONDS: "0",
+      ENABLE_QUERY_LOGGING: "true",
     },
     production: {
+      LOG_LEVEL: "warn",
+      DB_POOL_SIZE: "20",
+      CACHE_TTL_SECONDS: "300",
+      ENABLE_QUERY_LOGGING: "false",
+    },
+    test: {
       LOG_LEVEL: "error",
+      DB_POOL_SIZE: "1",
+      CACHE_TTL_SECONDS: "0",
+      ENABLE_QUERY_LOGGING: "false",
     },
   },
-  activeProfile: "development", // Or omit to use process.env.NODE_ENV
+  // Reads NODE_ENV automatically; can be overridden with activeProfile: "production"
 });
 ```
 
-Profiles have the **lowest priority** — any value in `sources` will override the profile default.
+Values from actual env vars always override profile defaults.
 
-## Nested Variables with Groups
+---
 
-Group related environment variables with `eg.group()`:
+### Watch Mode (Hot Reload)
 
-```typescript
-const env = createEnv({
-  schema: {
-    db: eg.group({
-      HOST: eg.string().default("localhost"),
-      PORT: eg.port().default(5432),
-      NAME: eg.string(),
-      USER: eg.string(),
-      PASSWORD: eg.string().sensitive(),
-    }),
-    redis: eg.group(
-      {
-        HOST: eg.string(),
-        PORT: eg.port(),
-      },
-      { separator: "_" }, // Custom separator (default: "__")
-    ),
-  },
-  sources: [{
-    DB__HOST: "mydb.example.com",
-    DB__PORT: "5433",
-    DB__NAME: "production",
-    DB__USER: "admin",
-    DB__PASSWORD: "secret",
-    REDIS_HOST: "cache.example.com",
-    REDIS_PORT: "6379",
-  }],
-});
-
-// Fully typed nested access:
-env.db.HOST       // "mydb.example.com"
-env.db.PORT       // 5433
-env.redis.HOST    // "cache.example.com"
-```
-
-Group fields use the pattern `{GROUP_NAME}{SEPARATOR}{FIELD_NAME}` in environment variables.
-
-## Array of Objects
-
-Read indexed environment variables as an array of typed objects with `eg.arrayOfGroups()`:
-
-```typescript
-const env = createEnv({
-  schema: {
-    servers: eg.arrayOfGroups({
-      HOST: eg.string(),
-      PORT: eg.port(),
-      MAX_CONNECTIONS: eg.integer().default(100),
-    }),
-  },
-  sources: [{
-    SERVERS_0_HOST: "api1.example.com",
-    SERVERS_0_PORT: "8080",
-    SERVERS_1_HOST: "api2.example.com",
-    SERVERS_1_PORT: "8081",
-    SERVERS_1_MAX_CONNECTIONS: "200",
-    SERVERS_2_HOST: "api3.example.com",
-    SERVERS_2_PORT: "8082",
-  }],
-});
-
-// env.servers is typed as:
-// Array<{ HOST: string; PORT: number; MAX_CONNECTIONS: number }>
-
-env.servers[0].HOST        // "api1.example.com"
-env.servers[1].PORT        // 8081
-env.servers[2].MAX_CONNECTIONS  // 100 (default)
-```
-
-The pattern is `{FIELD_NAME}_{INDEX}_{SUBFIELD_NAME}`. Parsing stops when no subfields exist for the next index.
-
-**Custom separator:**
-
-```typescript
-eg.arrayOfGroups(
-  { HOST: eg.string(), PORT: eg.port() },
-  { separator: "__" },
-)
-// Reads: SERVERS__0__HOST, SERVERS__0__PORT, etc.
-```
-
-**Note:** `arrayOfGroups` defaults to a single underscore `_` separator, unlike `group` which defaults to double underscore `__`.
-
-## Record Fields
-
-Capture all environment variables matching a prefix or pattern as a `Record<string, string>`:
-
-```typescript
-const env = createEnv({
-  schema: {
-    headers: eg.record("HTTP_HEADER_"),
-    flags: eg.record(/^FEATURE_FLAG_/),
-  },
-  sources: [{
-    HTTP_HEADER_ACCEPT: "application/json",
-    HTTP_HEADER_AUTHORIZATION: "Bearer token123",
-    HTTP_HEADER_USER_AGENT: "MyApp/1.0",
-    FEATURE_FLAG_NEW_UI: "true",
-    FEATURE_FLAG_BETA_API: "false",
-    OTHER_VAR: "ignored",
-  }],
-});
-
-// Prefix is stripped from keys in the result:
-env.headers  // { ACCEPT: "application/json", AUTHORIZATION: "Bearer token123", USER_AGENT: "MyApp/1.0" }
-
-// Regex pattern: keys are not modified
-env.flags    // { FEATURE_FLAG_NEW_UI: "true", FEATURE_FLAG_BETA_API: "false" }
-```
-
-**Variants:**
-
-- `eg.record("PREFIX_")` — Matches vars starting with prefix, strips prefix from keys
-- `eg.record(/pattern/)` — Matches vars matching regex, keeps full keys
-- `eg.record()` — Captures all vars (usually not useful)
-
-## Watch Mode
-
-Watch `.env` file sources for changes and re-validate automatically:
+Re-validate and reload config when `.env` files change — ideal for long-running services:
 
 ```typescript
 import { watchEnv, eg } from "@yedoma-labs/bylyt-env-guard";
@@ -317,217 +354,276 @@ import { watchEnv, eg } from "@yedoma-labs/bylyt-env-guard";
 const handle = watchEnv(
   {
     schema: {
-      PORT: eg.port().default(3000),
-      DATABASE_URL: eg.url(),
+      LOG_LEVEL: eg.enum(["debug", "info", "warn", "error"] as const).default("info"),
+      FEATURE_FLAG_X: eg.boolean().default(false),
     },
     sources: [".env", ".env.local"],
   },
-  (update) => {
-    if (update.error) {
-      console.error("Validation failed:", update.error.failures);
-    } else {
-      console.log("Env updated:", update.env);
-      // Restart server, update config, etc.
+  ({ env, error }) => {
+    if (error) {
+      console.error("Config reload failed:", error.message);
+      return; // keep running with last valid config
     }
+    // Apply new config — env is fully typed
+    updateLogLevel(env.LOG_LEVEL);
+    console.log("Config reloaded:", { LOG_LEVEL: env.LOG_LEVEL });
   },
 );
 
-// Stop watching when done
-handle.stop();
+// Later, e.g. on SIGTERM:
+process.on("SIGTERM", () => {
+  handle.stop();
+  process.exit(0);
+});
 ```
 
-**Options:**
+---
 
-- `debounceMs` — Delay before re-evaluating after file change (default: `100`ms)
-- All `createEnv` options: `prefix`, `strict`, `profiles`, `activeProfile`
+### Generate `.env.example`
 
-**Callback signature:**
+Auto-generate a `.env.example` file from your schema — always in sync with the code:
 
 ```typescript
-type WatchCallback<T> = (update:
-  | { env: Readonly<InferEnv<T>>; error: null }
-  | { env: null; error: EnvValidationError }
-) => void;
+import { generateEnvExample, eg } from "@yedoma-labs/bylyt-env-guard";
+
+const schema = {
+  NODE_ENV: eg.enum(["development", "production"] as const)
+    .describe("Application environment"),
+  PORT: eg.port().default(3000)
+    .describe("HTTP port")
+    .example(8080),
+  DATABASE_URL: eg.url().sensitive()
+    .describe("PostgreSQL connection string")
+    .example("postgres://user:pass@localhost:5432/mydb"),
+  API_KEY: eg.string().minLength(32).sensitive()
+    .describe("Third-party API key"),
+};
+
+console.log(generateEnvExample(schema));
 ```
 
-The callback is invoked **immediately** with the initial state, then again whenever watched files change.
+Output:
+```env
+# NODE_ENV
+# Type: enum | Required
+# Constraints: values: development, production
+# Application environment
+NODE_ENV=
 
-**Note:** Only file sources (string paths) are watched. Object sources and `process.env` are not monitored.
+# PORT
+# Type: port | Optional
+# Default: 3000
+# HTTP port
+PORT=8080
 
-## Generate Markdown Docs
+# DATABASE_URL
+# Type: url | Optional | Sensitive
+# PostgreSQL connection string
+DATABASE_URL=postgres://user:pass@localhost:5432/mydb
 
-Generate a Markdown table documenting your environment schema:
+# API_KEY
+# Type: string | Required | Sensitive
+# Constraints: minLength: 32
+# Third-party API key
+API_KEY=
+```
+
+Add a build script to keep it updated:
+```json
+// package.json
+{
+  "scripts": {
+    "gen:env": "tsx scripts/gen-env-example.ts"
+  }
+}
+```
+
+---
+
+### Generate Markdown Docs
+
+Generate a markdown reference table for your README or internal docs:
 
 ```typescript
 import { generateMarkdownDocs, eg } from "@yedoma-labs/bylyt-env-guard";
-import { writeFileSync } from "fs";
 
 const schema = {
-  NODE_ENV: eg.enum(["development", "production"] as const).default("development"),
-  PORT: eg.port().default(3000).describe("HTTP server port"),
-  DATABASE_URL: eg.url().protocols("postgres").describe("PostgreSQL connection string"),
-  WORKERS: eg.integer().min(1).max(16).default(4),
-  DEBUG: eg.boolean().default(false),
+  PORT: eg.port().default(3000).describe("HTTP port"),
+  DATABASE_URL: eg.url().sensitive().describe("PostgreSQL connection URL"),
+  LOG_LEVEL: eg.enum(["debug", "info", "warn", "error"] as const).default("info"),
+  API_KEY: eg.string().minLength(32).sensitive().describe("Third-party API key"),
 };
 
-const markdown = generateMarkdownDocs(schema, {
-  title: "Configuration Reference",
-  includeConstraints: true,
-});
-
-writeFileSync("docs/config.md", markdown);
+console.log(generateMarkdownDocs(schema, { title: "Configuration Reference" }));
 ```
 
-Produces:
-
+Output:
 ```markdown
 ## Configuration Reference
 
 | Variable | Type | Required | Default | Constraints | Description |
 | --- | --- | --- | --- | --- | --- |
-| `NODE_ENV` | enum | — | `development` | `development`, `production` | — |
-| `PORT` | port | — | `3000` | min: 1, max: 65535 | HTTP server port |
-| `DATABASE_URL` | url | ✅ | — | protocols: postgres | PostgreSQL connection string |
-| `WORKERS` | integer | — | `4` | min: 1, max: 16 | — |
-| `DEBUG` | boolean | — | `false` | — | — |
+| `PORT` | port | — | `3000` | min: 1, max: 65535 | HTTP port |
+| `DATABASE_URL` | url | ✅ | — | — | PostgreSQL connection URL |
+| `LOG_LEVEL` | enum | — | `info` | `debug`, `info`, `warn`, `error` | — |
+| `API_KEY` | string | ✅ | — | minLen: 32 | Third-party API key |
 ```
 
-**Options:**
+---
 
-- `title` — Heading text (default: `"Environment Variables"`)
-- `includeConstraints` — Show constraints column (default: `true`)
-
-**Group expansion:**
-
-Group and `arrayOfGroups` fields are automatically expanded:
+### Custom Validation & Transforms
 
 ```typescript
-const schema = {
-  db: eg.group({ HOST: eg.string(), PORT: eg.port() }),
-  servers: eg.arrayOfGroups({ HOST: eg.string() }),
-};
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
 
-// Generates rows for:
-// DB__HOST, DB__PORT, SERVERS_N_HOST (N = index placeholder)
-```
-
-## Prefix Support
-
-Strip a common prefix from all environment variables:
-
-```typescript
-const env = createEnv({
+export const env = createEnv({
   schema: {
-    PORT: eg.port(),
-    API_KEY: eg.string(),
-  },
-  sources: [{
-    APP_PORT: "3000",
-    APP_API_KEY: "secret",
-  }],
-  prefix: "APP_",
-});
+    // Custom validator
+    CRON_EXPRESSION: eg.string()
+      .validate((val) => {
+        const parts = val.trim().split(/\s+/);
+        return parts.length === 5 ? null : "must be a valid 5-part cron expression (e.g. '0 * * * *')";
+      }),
 
-env.PORT     // 3000 (read from APP_PORT)
-env.API_KEY  // "secret" (read from APP_API_KEY)
-```
+    // Transform: parse comma-separated allowed origins into a Set
+    CORS_ORIGINS: eg.array()
+      .separator(",")
+      .transform((origins) => new Set(origins)),
 
-Useful for frameworks like Next.js (`NEXT_PUBLIC_`) or scoping variables to your app.
+    // Transform: uppercase the region
+    AWS_REGION: eg.string()
+      .default("eu-central-1")
+      .transform((r) => r.toLowerCase()),
 
-## Strict Mode
-
-Warn about unknown environment variables when a prefix is set:
-
-```typescript
-const env = createEnv({
-  schema: { PORT: eg.port() },
-  sources: [{ APP_PORT: "3000", APP_UNKNOWN: "value" }],
-  prefix: "APP_",
-  strict: true,
-});
-// Console warning: [env-guard] Unknown environment variable: "APP_UNKNOWN"
-```
-
-Helps catch typos and unused variables.
-
-## Generate .env.example
-
-Auto-generate documentation from your schema:
-
-```typescript
-import { generateEnvExample, eg } from "@yedoma-labs/bylyt-env-guard";
-import { writeFileSync } from "fs";
-
-const schema = {
-  NODE_ENV: eg.enum(["development", "production"]).default("development"),
-  PORT: eg.port().default(3000).describe("HTTP server port"),
-  API_KEY: eg.string().sensitive().describe("Third-party API key").example("sk_live_abc123"),
-  DATABASE_URL: eg.url().protocols("postgres", "postgresql"),
-};
-
-const example = generateEnvExample(schema);
-writeFileSync(".env.example", example);
-```
-
-Produces:
-
-```bash
-# NODE_ENV
-# Type: enum | Optional
-# Default: development
-# Constraints: values: development, production
-NODE_ENV=development
-
-# PORT
-# Type: port | Optional
-# Default: 3000
-# Constraints: min: 1 | max: 65535
-# HTTP server port
-PORT=3000
-
-# API_KEY
-# Type: string | Required | Sensitive
-# Third-party API key
-API_KEY=sk_live_abc123
-
-# DATABASE_URL
-# Type: url | Required
-# Constraints: protocols: postgres, postgresql
-DATABASE_URL=
-```
-
-## Conditional Required Fields
-
-Make fields required only when certain conditions are met:
-
-```typescript
-const env = createEnv({
-  schema: {
-    USE_EXTERNAL_API: eg.boolean().default(false),
-    EXTERNAL_API_KEY: eg
-      .string()
-      .requiredIf((raw) => raw.USE_EXTERNAL_API === "true"),
-    EXTERNAL_API_URL: eg
-      .url()
-      .requiredIf((raw) => raw.USE_EXTERNAL_API === "true"),
+    // JSON field with typed result
+    RATE_LIMIT_CONFIG: eg.json<{ windowMs: number; max: number }>()
+      .optional(),
   },
 });
+
+// env.CORS_ORIGINS        → Set<string>
+// env.RATE_LIMIT_CONFIG   → { windowMs: number; max: number } | undefined
 ```
 
-If `USE_EXTERNAL_API=true`, both `EXTERNAL_API_KEY` and `EXTERNAL_API_URL` become required.
+---
 
-## Error Handling
+### Layered Sources
+
+Sources are merged left to right — later sources win:
 
 ```typescript
-import { createEnv, eg, EnvValidationError } from "@yedoma-labs/bylyt-env-guard";
+import { createEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+export const env = createEnv({
+  schema: {
+    DATABASE_URL: eg.url(),
+    PORT: eg.port().default(3000),
+  },
+  sources: [
+    ".env",            // base config (committed defaults)
+    ".env.local",      // local overrides (gitignored)
+    ".env.production", // production overrides (loaded via CI)
+    process.env,       // runtime env vars win over everything
+  ],
+});
+```
+
+---
+
+### Error Handling
+
+```typescript
+import { createEnv, EnvValidationError, eg } from "@yedoma-labs/bylyt-env-guard";
 
 try {
   const env = createEnv({ schema: { /* ... */ } });
 } catch (err) {
   if (err instanceof EnvValidationError) {
-    console.error(err.failures); // ValidationFailure[]
+    // failures is an array — ALL errors reported at once
+    for (const failure of err.failures) {
+      console.error(`${failure.field}: ${failure.message} [${failure.code}]`);
+    }
+    // failure.code is one of: MISSING | INVALID_TYPE | INVALID_URL | INVALID_EMAIL |
+    // INVALID_ENUM | INVALID_JSON | INVALID_DATE | INVALID_PROTOCOL |
+    // MIN_VALUE | MAX_VALUE | MIN_LENGTH | MAX_LENGTH | PATTERN | CUSTOM
+    process.exit(1);
   }
+  throw err;
 }
+```
+
+Console output when validation fails:
+```
+❌ Environment validation failed:
+
+  • DATABASE_URL: is required but missing
+  • PORT: must be at most 65535 (got: 99999)
+  • API_KEY: must be at least 32 characters (got: ***)
+```
+
+---
+
+## Schema Types Reference
+
+| Builder | Returns | Description |
+|---|---|---|
+| `eg.string()` | `string` | Any string value |
+| `eg.number()` | `number` | Parsed via `Number()`, rejects `Infinity` |
+| `eg.integer()` | `number` | Integer only — rejects decimals and `Infinity` |
+| `eg.boolean()` | `boolean` | `true/1/yes/on` → `true`, `false/0/no/off` → `false` |
+| `eg.enum([...])` | union type | Must be one of the specified string values |
+| `eg.url()` | `string` | Validated via `new URL()` |
+| `eg.port()` | `number` | Integer between 1–65535 |
+| `eg.email()` | `string` | Validated email address format |
+| `eg.json<T>()` | `T` (default: `unknown`) | Parses JSON string |
+| `eg.date()` | `Date` | Parses date string to `Date` object |
+| `eg.array()` | `string[]` | Split by separator (default: `,`) |
+| `eg.group({...})` | `object` | Reads `KEY__SUBKEY` env vars as nested object |
+| `eg.arrayOfGroups({...})` | `object[]` | Reads `KEY_0_SUBKEY`, `KEY_1_SUBKEY`, … as array |
+| `eg.record("PREFIX_")` | `Record<string, string>` | Captures all matching env vars |
+
+## Field Modifiers Reference
+
+### Universal (all types)
+| Method | Description |
+|---|---|
+| `.required()` | Mark field as required (default) |
+| `.optional()` | Allow `undefined` value |
+| `.default(value)` | Static default; implies optional |
+| `.default(() => value)` | Factory default, evaluated at startup |
+| `.sensitive()` | Mask value in error messages |
+| `.aliases("OTHER_NAME")` | Fallback env var names |
+| `.describe("text")` | Description for docs/example generation |
+| `.example(value)` | Example value for `.env.example` |
+| `.validate(fn)` | Custom validator — return `null` on pass, error string on fail |
+| `.transform(fn)` | Transform value after validation |
+| `.deprecated("msg")` | Log warning when variable is set |
+| `.requiredIf(fn)` | Conditionally required based on other raw values |
+
+### Type-specific
+| Method | Types | Description |
+|---|---|---|
+| `.min(n)` | `number`, `integer` | Minimum value |
+| `.max(n)` | `number`, `integer` | Maximum value |
+| `.minLength(n)` | `string`, `email`, `array` | Min length / min item count |
+| `.maxLength(n)` | `string`, `email`, `array` | Max length / max item count |
+| `.pattern(re)` | `string` | Must match regex |
+| `.protocols("https", "wss")` | `url` | Restrict allowed URL protocols |
+| `.caseInsensitive()` | `enum` | Case-insensitive value matching |
+| `.separator(str)` | `array` | Item separator (default: `,`) |
+| `.of("number")` | `array` | Typed array items: `"string"` \| `"number"` \| `"integer"` \| `"boolean"` |
+
+## `createEnv` Options
+
+```typescript
+createEnv({
+  schema: { ... },              // required
+  sources: [...],               // default: [process.env]
+  prefix: "APP_",               // strip prefix from all schema keys
+  strict: true,                 // warn on unknown prefixed vars
+  profiles: { dev: { ... } },   // per-environment defaults
+  activeProfile: "production",  // default: process.env.NODE_ENV
+})
 ```
 
 ## Contributing

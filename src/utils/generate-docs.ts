@@ -36,7 +36,7 @@ export function generateMarkdownDocs(
 
 		if (opts.kind === "array-of-groups" && opts.subSchema) {
 			const sep = opts.groupSeparator ?? "_";
-			const prefix = key.toUpperCase() + sep + "N" + sep;
+			const prefix = `${key.toUpperCase() + sep}N${sep}`;
 			for (const [subKey, subField] of Object.entries(opts.subSchema)) {
 				lines.push(formatRow(`${prefix}${subKey}`, subField._options, includeConstraints));
 			}

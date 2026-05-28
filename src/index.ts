@@ -22,6 +22,15 @@ export interface CreateEnvOptions<T extends SchemaDefinition> {
 	activeProfile?: string;
 }
 
+function deepFreeze<T>(obj: T): T {
+	if (obj === null || typeof obj !== "object") return obj;
+	Object.freeze(obj);
+	for (const value of Object.values(obj as object)) {
+		deepFreeze(value);
+	}
+	return obj;
+}
+
 export function createEnv<T extends SchemaDefinition>(options: CreateEnvOptions<T>): InferEnv<T> {
 	const { schema, prefix, strict, profiles, activeProfile } = options;
 
@@ -32,5 +41,5 @@ export function createEnv<T extends SchemaDefinition>(options: CreateEnvOptions<
 
 	const resolved = resolveSources(schema, sources, { prefix, strict });
 	const result = validateAndCoerce(schema, resolved);
-	return Object.freeze(result) as InferEnv<T>;
+	return deepFreeze(result) as InferEnv<T>;
 }

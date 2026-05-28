@@ -29,15 +29,23 @@ function processSchema(
 			const sep = opts.groupSeparator ?? "_";
 			const envPrefix = key.toUpperCase() + sep;
 			const items: unknown[] = [];
+			const MAX_INDEX = 100;
 			let index = 0;
+			let consecutiveEmpty = 0;
 
-			while (true) {
+			while (index <= MAX_INDEX) {
 				const indexPrefix = envPrefix + index + sep;
 				// Check if any subfield exists for this index
 				const hasAnyKey = Object.keys(opts.subSchema).some(
 					(sk) => resolved.merged[indexPrefix + sk] !== undefined,
 				);
-				if (!hasAnyKey) break;
+				if (!hasAnyKey) {
+					consecutiveEmpty++;
+					if (consecutiveEmpty >= 2) break; // stop after 2 consecutive missing indices
+					index++;
+					continue;
+				}
+				consecutiveEmpty = 0;
 
 				const subRaw: Record<string, string | undefined> = {};
 				for (const sk of Object.keys(opts.subSchema)) {
@@ -60,18 +68,20 @@ function processSchema(
 
 		// Handle record fields
 		if (opts.kind === "record") {
+			if (opts.recordPrefix === undefined && opts.recordPattern === undefined) {
+				console.warn(
+					`[env-guard] record field "${key}" has no prefix or pattern — returning empty object`,
+				);
+				result[key] = {};
+				continue;
+			}
 			const captured: Record<string, string> = {};
 			for (const [k, v] of Object.entries(resolved.merged)) {
 				if (opts.recordPrefix !== undefined) {
 					if (k.startsWith(opts.recordPrefix)) {
 						captured[k.slice(opts.recordPrefix.length)] = v;
 					}
-				} else if (opts.recordPattern !== undefined) {
-					if (opts.recordPattern.test(k)) {
-						captured[k] = v;
-					}
-				} else {
-					// No filter: capture everything (probably not useful but valid)
+				} else if (opts.recordPattern?.test(k)) {
 					captured[k] = v;
 				}
 			}
@@ -95,9 +105,7 @@ function processSchema(
 			for (const f of sub.failures) {
 				failures.push({ ...f, field: `${key}.${f.field}` });
 			}
-			if (sub.failures.length === 0) {
-				result[key] = sub.result;
-			}
+			result[key] = sub.failures.length === 0 ? sub.result : undefined;
 			continue;
 		}
 
