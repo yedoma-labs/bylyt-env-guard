@@ -16,7 +16,7 @@ export function generateEnvExample(schema: SchemaDefinition): string {
 		lines.push(...generateFieldLines(key, opts));
 	}
 
-	return lines.join("\n") + "\n";
+	return `${lines.join("\n")}\n`;
 }
 
 function generateFieldLines(key: string, opts: SchemaFieldOptions): string[] {
