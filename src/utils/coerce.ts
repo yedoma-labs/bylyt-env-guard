@@ -30,6 +30,9 @@ export function coerce(
 			if (!Number.isFinite(n) || !Number.isInteger(n)) {
 				throw new CoercionError(raw, kind === "integer" ? "integer" : "port (integer)");
 			}
+			if (n > Number.MAX_SAFE_INTEGER || n < Number.MIN_SAFE_INTEGER) {
+				throw new CoercionError(raw, `${kind} (exceeds safe integer range)`);
+			}
 			return n;
 		}
 
@@ -50,10 +53,20 @@ export function coerce(
 		}
 
 		case "json": {
+			const MAX_JSON_SIZE = 1024 * 1024; // 1MB
+			if (raw.length > MAX_JSON_SIZE) {
+				throw new CoercionError(raw.slice(0, 100), "JSON (size limit exceeded)");
+			}
 			try {
-				return JSON.parse(raw);
-			} catch {
-				throw new CoercionError(raw, "JSON");
+				const parsed = JSON.parse(raw);
+				const depth = getJSONDepth(parsed);
+				if (depth > 50) {
+					throw new CoercionError(raw.slice(0, 100), "JSON (depth limit exceeded)");
+				}
+				return parsed;
+			} catch (err) {
+				if (err instanceof CoercionError) throw err;
+				throw new CoercionError(raw.slice(0, 100), "JSON");
 			}
 		}
 
@@ -102,6 +115,17 @@ function coerceArrayItem(item: string, kind: ArrayItemKind, rawArray: string): u
 		default:
 			return item;
 	}
+}
+
+function getJSONDepth(obj: unknown, depth = 0): number {
+	if (depth > 50) return depth; // early termination
+	if (obj === null || typeof obj !== "object") return depth;
+	let maxChildDepth = depth;
+	for (const value of Object.values(obj)) {
+		const childDepth = getJSONDepth(value, depth + 1);
+		if (childDepth > maxChildDepth) maxChildDepth = childDepth;
+	}
+	return maxChildDepth;
 }
 
 export class CoercionError extends Error {

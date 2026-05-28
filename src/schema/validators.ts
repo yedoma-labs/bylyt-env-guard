@@ -1,5 +1,17 @@
 import type { SchemaFieldOptions } from "./types.js";
 
+function constantTimeEqual(a: string, b: string): boolean {
+	// Constant-time string comparison to prevent timing attacks
+	const maxLen = Math.max(a.length, b.length);
+	const aPadded = a.padEnd(maxLen, "\0");
+	const bPadded = b.padEnd(maxLen, "\0");
+	let result = a.length === b.length ? 0 : 1;
+	for (let i = 0; i < maxLen; i++) {
+		result |= aPadded.charCodeAt(i) ^ bPadded.charCodeAt(i);
+	}
+	return result === 0;
+}
+
 export interface ValidationFailure {
 	field: string;
 	message: string;
@@ -160,9 +172,25 @@ function validateEnum(
 ): ValidationFailure | null {
 	if (options.enumValues) {
 		const compare = options.caseInsensitive ? value.toLowerCase() : value;
-		const match = options.enumValues.some((v) =>
-			options.caseInsensitive ? v.toLowerCase() === compare : v === compare,
-		);
+		let match: boolean;
+
+		if (options.isSensitive) {
+			// Constant-time comparison for sensitive enums
+			match = false;
+			for (const v of options.enumValues) {
+				const candidate = options.caseInsensitive ? v.toLowerCase() : v;
+				if (constantTimeEqual(compare, candidate)) {
+					match = true;
+					// Don't break - continue checking all values
+				}
+			}
+		} else {
+			// Fast path for non-sensitive enums
+			match = options.enumValues.some((v) =>
+				options.caseInsensitive ? v.toLowerCase() === compare : v === compare,
+			);
+		}
+
 		if (!match) {
 			return {
 				field: key,

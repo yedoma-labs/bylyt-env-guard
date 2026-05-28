@@ -31,8 +31,9 @@ export function parseDotenv(content: string): Record<string, string> {
 			(value.startsWith('"') && value === '"')
 		) {
 			// Multiline value
+			const MAX_MULTILINE_LINES = 100;
 			const parts = [value.slice(1)];
-			while (i < lines.length) {
+			while (i < lines.length && parts.length < MAX_MULTILINE_LINES) {
 				const nextLine = lines[i];
 				i++;
 				if (nextLine === undefined) break;
@@ -41,6 +42,9 @@ export function parseDotenv(content: string): Record<string, string> {
 					break;
 				}
 				parts.push(nextLine);
+			}
+			if (parts.length >= MAX_MULTILINE_LINES) {
+				throw new Error(`Multiline value for "${key}" exceeds ${MAX_MULTILINE_LINES} lines`);
 			}
 			result[key] = parts.join("\n");
 			continue;

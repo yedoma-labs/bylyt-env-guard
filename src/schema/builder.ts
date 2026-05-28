@@ -206,6 +206,14 @@ class ArrayFieldBuilder<T extends unknown[] | undefined = string[]> extends Fiel
 	}
 
 	separator(sep: string): this {
+		if (sep === "") {
+			throw new Error("Array separator cannot be empty string");
+		}
+		if (sep.trim() === "") {
+			console.warn(
+				"[env-guard] Array separator is whitespace-only, values will be split on whitespace",
+			);
+		}
 		this._options.separator = sep;
 		return this;
 	}
