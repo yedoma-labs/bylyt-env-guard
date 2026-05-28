@@ -14,9 +14,13 @@ export function resolveSources(
 ): ResolvedValues {
 	const prefix = options?.prefix ?? "";
 
-	const merged: Record<string, string> = {};
+	const merged: Record<string, string> = Object.create(null) as Record<string, string>;
 	for (const source of sources) {
-		Object.assign(merged, parseSource(source));
+		const parsed = parseSource(source);
+		for (const [k, v] of Object.entries(parsed)) {
+			if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
+			merged[k] = v;
+		}
 	}
 
 	if (options?.strict && prefix) {

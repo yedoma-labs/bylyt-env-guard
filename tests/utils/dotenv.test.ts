@@ -1,6 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { parseDotenv } from "../../src/utils/dotenv.js";
 
+describe("prototype pollution prevention", () => {
+	it("ignores __proto__ keys", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: testing prototype pollution guard
+		const before = (Object.prototype as any).polluted;
+		parseDotenv("__proto__[polluted]=true\nNORMAL=value");
+		// biome-ignore lint/suspicious/noExplicitAny: testing prototype pollution guard
+		expect((Object.prototype as any).polluted).toBe(before);
+	});
+
+	it("ignores constructor keys", () => {
+		parseDotenv("constructor[prototype][x]=hacked\nNORMAL=value");
+		// biome-ignore lint/suspicious/noExplicitAny: testing prototype pollution guard
+		expect((Object.prototype as any).x).toBeUndefined();
+	});
+
+	it("still parses normal keys when blocked keys are present", () => {
+		// Only exact keys __proto__, constructor, prototype are blocked
+		// Flat keys like "__proto__[bad]" are harmless and pass through
+		const result = parseDotenv("__proto__=evil\nPORT=3000\nconstructor=y\nHOST=localhost");
+		expect(result.PORT).toBe("3000");
+		expect(result.HOST).toBe("localhost");
+		expect(Object.hasOwn(result, "__proto__")).toBe(false);
+		expect(Object.hasOwn(result, "constructor")).toBe(false);
+	});
+});
+
 describe("parseDotenv", () => {
 	it("parses simple key=value", () => {
 		expect(parseDotenv("FOO=bar")).toEqual({ FOO: "bar" });

@@ -23,6 +23,7 @@ export function parseDotenv(content: string): Record<string, string> {
 		if (eqIndex === -1) continue;
 
 		const key = cleaned.slice(0, eqIndex).trim();
+		if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
 		let value = cleaned.slice(eqIndex + 1).trim();
 
 		if (
