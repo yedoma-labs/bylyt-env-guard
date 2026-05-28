@@ -24,6 +24,61 @@ function processSchema(
 	for (const [key, field] of Object.entries(schema)) {
 		const opts = field._options;
 
+		// Handle array-of-groups fields
+		if (opts.kind === "array-of-groups" && opts.subSchema) {
+			const sep = opts.groupSeparator ?? "_";
+			const envPrefix = key.toUpperCase() + sep;
+			const items: unknown[] = [];
+			let index = 0;
+
+			while (true) {
+				const indexPrefix = envPrefix + index + sep;
+				// Check if any subfield exists for this index
+				const hasAnyKey = Object.keys(opts.subSchema).some(
+					(sk) => resolved.merged[indexPrefix + sk] !== undefined,
+				);
+				if (!hasAnyKey) break;
+
+				const subRaw: Record<string, string | undefined> = {};
+				for (const sk of Object.keys(opts.subSchema)) {
+					subRaw[sk] = resolved.merged[indexPrefix + sk];
+				}
+				const subResolved: ResolvedValues = { raw: subRaw, merged: resolved.merged };
+				const sub = processSchema(opts.subSchema, subResolved);
+				for (const f of sub.failures) {
+					failures.push({ ...f, field: `${key}[${index}].${f.field}` });
+				}
+				if (sub.failures.length === 0) {
+					items.push(sub.result);
+				}
+				index++;
+			}
+
+			result[key] = items;
+			continue;
+		}
+
+		// Handle record fields
+		if (opts.kind === "record") {
+			const captured: Record<string, string> = {};
+			for (const [k, v] of Object.entries(resolved.merged)) {
+				if (opts.recordPrefix !== undefined) {
+					if (k.startsWith(opts.recordPrefix)) {
+						captured[k.slice(opts.recordPrefix.length)] = v;
+					}
+				} else if (opts.recordPattern !== undefined) {
+					if (opts.recordPattern.test(k)) {
+						captured[k] = v;
+					}
+				} else {
+					// No filter: capture everything (probably not useful but valid)
+					captured[k] = v;
+				}
+			}
+			result[key] = captured;
+			continue;
+		}
+
 		// Handle group fields
 		if (opts.kind === "group" && opts.subSchema) {
 			const separator = opts.groupSeparator ?? "__";

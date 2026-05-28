@@ -225,3 +225,73 @@ describe("group fields", () => {
 		}
 	});
 });
+
+describe("arrayOfGroups", () => {
+	it("resolves indexed group items", () => {
+		const schema = {
+			servers: eg.arrayOfGroups({ HOST: eg.string(), PORT: eg.port() }),
+		};
+		const result = validateAndCoerce(schema, {
+			raw: {},
+			merged: {
+				SERVERS_0_HOST: "host1",
+				SERVERS_0_PORT: "3000",
+				SERVERS_1_HOST: "host2",
+				SERVERS_1_PORT: "4000",
+			},
+		});
+		const servers = result.servers as Array<{ HOST: string; PORT: number }>;
+		expect(servers).toHaveLength(2);
+		expect(servers[0]).toEqual({ HOST: "host1", PORT: 3000 });
+		expect(servers[1]).toEqual({ HOST: "host2", PORT: 4000 });
+	});
+
+	it("returns empty array when no indexed vars present", () => {
+		const schema = { servers: eg.arrayOfGroups({ HOST: eg.string() }) };
+		const result = validateAndCoerce(schema, { raw: {}, merged: {} });
+		expect(result.servers).toEqual([]);
+	});
+
+	it("prefixes field names in arrayOfGroups failures", () => {
+		const schema = {
+			servers: eg.arrayOfGroups({ HOST: eg.string(), PORT: eg.port() }),
+		};
+		try {
+			validateAndCoerce(schema, {
+				raw: {},
+				merged: { SERVERS_0_PORT: "3000" }, // HOST missing for index 0
+			});
+			expect.unreachable();
+		} catch (err) {
+			expect(err).toBeInstanceOf(EnvValidationError);
+			const f = (err as EnvValidationError).failures[0];
+			expect(f?.field).toMatch(/servers\[0\]/);
+		}
+	});
+});
+
+describe("record field", () => {
+	it("captures all vars matching prefix", () => {
+		const schema = { headers: eg.record("HTTP_HEADER_") };
+		const result = validateAndCoerce(schema, {
+			raw: {},
+			merged: { HTTP_HEADER_ACCEPT: "json", HTTP_HEADER_AUTH: "Bearer xyz", OTHER: "ignored" },
+		});
+		expect(result.headers).toEqual({ ACCEPT: "json", AUTH: "Bearer xyz" });
+	});
+
+	it("captures vars matching regex pattern", () => {
+		const schema = { flags: eg.record(/^FLAG_/) };
+		const result = validateAndCoerce(schema, {
+			raw: {},
+			merged: { FLAG_A: "1", FLAG_B: "2", OTHER: "x" },
+		});
+		expect(result.flags).toEqual({ FLAG_A: "1", FLAG_B: "2" });
+	});
+
+	it("returns empty object when no matching vars", () => {
+		const schema = { headers: eg.record("MISSING_PREFIX_") };
+		const result = validateAndCoerce(schema, { raw: {}, merged: { OTHER: "x" } });
+		expect(result.headers).toEqual({});
+	});
+});

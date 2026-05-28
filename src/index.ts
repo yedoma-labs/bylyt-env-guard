@@ -3,10 +3,14 @@ import { resolveSources } from "./core/resolver.js";
 import { validateAndCoerce } from "./core/validator.js";
 import type { InferEnv, SchemaDefinition } from "./schema/types.js";
 
+export type { WatchCallback, WatchHandle, WatchOptions } from "./core/watcher.js";
+export { watchEnv } from "./core/watcher.js";
 export { EnvValidationError } from "./errors/validation-error.js";
 export { eg } from "./schema/builder.js";
 export type { ArrayItemKind, InferEnv, SchemaDefinition, SchemaField } from "./schema/types.js";
 export type { ValidationFailure } from "./schema/validators.js";
+export type { GenerateMarkdownDocsOptions } from "./utils/generate-docs.js";
+export { generateMarkdownDocs } from "./utils/generate-docs.js";
 export { generateEnvExample } from "./utils/generate-example.js";
 
 export interface CreateEnvOptions<T extends SchemaDefinition> {

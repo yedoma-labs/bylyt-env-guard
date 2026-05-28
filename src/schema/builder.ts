@@ -246,6 +246,31 @@ class GroupFieldBuilder<T extends SchemaDefinition> extends FieldBuilder<InferGr
 	}
 }
 
+class ArrayOfGroupsFieldBuilder<T extends SchemaDefinition> extends FieldBuilder<InferGroup<T>[]> {
+	constructor(subSchema: T, opts?: { separator?: string }) {
+		super({
+			kind: "array-of-groups",
+			isRequired: false,
+			isSensitive: false,
+			subSchema: subSchema as SchemaDefinition,
+			groupSeparator: opts?.separator ?? "_",
+		});
+	}
+}
+
+class RecordFieldBuilder<
+	T extends Record<string, string> | undefined = Record<string, string>,
+> extends FieldBuilder<T> {
+	constructor(prefixOrPattern?: string | RegExp) {
+		super({ kind: "record", isRequired: false, isSensitive: false });
+		if (typeof prefixOrPattern === "string") {
+			this._options.recordPrefix = prefixOrPattern;
+		} else if (prefixOrPattern instanceof RegExp) {
+			this._options.recordPattern = prefixOrPattern;
+		}
+	}
+}
+
 export const eg = {
 	string: () => new StringFieldBuilder(),
 	number: () => new NumberFieldBuilder(),
@@ -260,4 +285,7 @@ export const eg = {
 	array: () => new ArrayFieldBuilder(),
 	group: <T extends SchemaDefinition>(subSchema: T, opts?: { separator?: string }) =>
 		new GroupFieldBuilder<T>(subSchema, opts),
+	arrayOfGroups: <T extends SchemaDefinition>(subSchema: T, opts?: { separator?: string }) =>
+		new ArrayOfGroupsFieldBuilder<T>(subSchema, opts),
+	record: (prefixOrPattern?: string | RegExp) => new RecordFieldBuilder(prefixOrPattern),
 };

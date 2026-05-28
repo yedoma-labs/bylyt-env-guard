@@ -16,9 +16,13 @@ Type-safe, zero-dependency environment variable validation for Node.js. Fail fas
 - 📁 **Multi-source** - `.env` files + `process.env` with configurable priority
 - 🌍 **Environment profiles** - Profile-based defaults (dev, test, prod)
 - 🏗️ **Nested variables** - Group related vars with `eg.group()`
+- 📊 **Array of objects** - Read indexed vars like `DB_0_HOST`, `DB_1_HOST` as typed arrays
+- 🗂️ **Record fields** - Capture all vars matching a prefix/pattern
 - 🏷️ **Prefix support** - Strip common prefixes like `APP_` or `NEXT_PUBLIC_`
 - 🔍 **Strict mode** - Warn about unknown environment variables
 - 📝 **Generate .env.example** - Auto-generate example files from schema
+- 📄 **Markdown docs** - Generate documentation tables from schema
+- 👀 **Watch mode** - Re-validate automatically when .env files change
 - ❓ **Conditional required** - Make fields required based on other fields
 - 🔐 **Immutable result** - Returned env object is deeply frozen
 
@@ -77,6 +81,8 @@ const env = createEnv({
 | `eg.date()` | `Date` | Parsed date string |
 | `eg.array()` | `string[]` | Split by separator (default: `,`) |
 | `eg.group({...})` | `object` | Nested group of fields |
+| `eg.arrayOfGroups({...})` | `object[]` | Indexed array of nested objects |
+| `eg.record(prefix)` | `Record<string, string>` | Capture all vars matching a prefix or pattern |
 
 ## Field Modifiers
 
@@ -221,6 +227,189 @@ env.redis.HOST    // "cache.example.com"
 ```
 
 Group fields use the pattern `{GROUP_NAME}{SEPARATOR}{FIELD_NAME}` in environment variables.
+
+## Array of Objects
+
+Read indexed environment variables as an array of typed objects with `eg.arrayOfGroups()`:
+
+```typescript
+const env = createEnv({
+  schema: {
+    servers: eg.arrayOfGroups({
+      HOST: eg.string(),
+      PORT: eg.port(),
+      MAX_CONNECTIONS: eg.integer().default(100),
+    }),
+  },
+  sources: [{
+    SERVERS_0_HOST: "api1.example.com",
+    SERVERS_0_PORT: "8080",
+    SERVERS_1_HOST: "api2.example.com",
+    SERVERS_1_PORT: "8081",
+    SERVERS_1_MAX_CONNECTIONS: "200",
+    SERVERS_2_HOST: "api3.example.com",
+    SERVERS_2_PORT: "8082",
+  }],
+});
+
+// env.servers is typed as:
+// Array<{ HOST: string; PORT: number; MAX_CONNECTIONS: number }>
+
+env.servers[0].HOST        // "api1.example.com"
+env.servers[1].PORT        // 8081
+env.servers[2].MAX_CONNECTIONS  // 100 (default)
+```
+
+The pattern is `{FIELD_NAME}_{INDEX}_{SUBFIELD_NAME}`. Parsing stops when no subfields exist for the next index.
+
+**Custom separator:**
+
+```typescript
+eg.arrayOfGroups(
+  { HOST: eg.string(), PORT: eg.port() },
+  { separator: "__" },
+)
+// Reads: SERVERS__0__HOST, SERVERS__0__PORT, etc.
+```
+
+**Note:** `arrayOfGroups` defaults to a single underscore `_` separator, unlike `group` which defaults to double underscore `__`.
+
+## Record Fields
+
+Capture all environment variables matching a prefix or pattern as a `Record<string, string>`:
+
+```typescript
+const env = createEnv({
+  schema: {
+    headers: eg.record("HTTP_HEADER_"),
+    flags: eg.record(/^FEATURE_FLAG_/),
+  },
+  sources: [{
+    HTTP_HEADER_ACCEPT: "application/json",
+    HTTP_HEADER_AUTHORIZATION: "Bearer token123",
+    HTTP_HEADER_USER_AGENT: "MyApp/1.0",
+    FEATURE_FLAG_NEW_UI: "true",
+    FEATURE_FLAG_BETA_API: "false",
+    OTHER_VAR: "ignored",
+  }],
+});
+
+// Prefix is stripped from keys in the result:
+env.headers  // { ACCEPT: "application/json", AUTHORIZATION: "Bearer token123", USER_AGENT: "MyApp/1.0" }
+
+// Regex pattern: keys are not modified
+env.flags    // { FEATURE_FLAG_NEW_UI: "true", FEATURE_FLAG_BETA_API: "false" }
+```
+
+**Variants:**
+
+- `eg.record("PREFIX_")` — Matches vars starting with prefix, strips prefix from keys
+- `eg.record(/pattern/)` — Matches vars matching regex, keeps full keys
+- `eg.record()` — Captures all vars (usually not useful)
+
+## Watch Mode
+
+Watch `.env` file sources for changes and re-validate automatically:
+
+```typescript
+import { watchEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+const handle = watchEnv(
+  {
+    schema: {
+      PORT: eg.port().default(3000),
+      DATABASE_URL: eg.url(),
+    },
+    sources: [".env", ".env.local"],
+  },
+  (update) => {
+    if (update.error) {
+      console.error("Validation failed:", update.error.failures);
+    } else {
+      console.log("Env updated:", update.env);
+      // Restart server, update config, etc.
+    }
+  },
+);
+
+// Stop watching when done
+handle.stop();
+```
+
+**Options:**
+
+- `debounceMs` — Delay before re-evaluating after file change (default: `100`ms)
+- All `createEnv` options: `prefix`, `strict`, `profiles`, `activeProfile`
+
+**Callback signature:**
+
+```typescript
+type WatchCallback<T> = (update:
+  | { env: Readonly<InferEnv<T>>; error: null }
+  | { env: null; error: EnvValidationError }
+) => void;
+```
+
+The callback is invoked **immediately** with the initial state, then again whenever watched files change.
+
+**Note:** Only file sources (string paths) are watched. Object sources and `process.env` are not monitored.
+
+## Generate Markdown Docs
+
+Generate a Markdown table documenting your environment schema:
+
+```typescript
+import { generateMarkdownDocs, eg } from "@yedoma-labs/bylyt-env-guard";
+import { writeFileSync } from "fs";
+
+const schema = {
+  NODE_ENV: eg.enum(["development", "production"] as const).default("development"),
+  PORT: eg.port().default(3000).describe("HTTP server port"),
+  DATABASE_URL: eg.url().protocols("postgres").describe("PostgreSQL connection string"),
+  WORKERS: eg.integer().min(1).max(16).default(4),
+  DEBUG: eg.boolean().default(false),
+};
+
+const markdown = generateMarkdownDocs(schema, {
+  title: "Configuration Reference",
+  includeConstraints: true,
+});
+
+writeFileSync("docs/config.md", markdown);
+```
+
+Produces:
+
+```markdown
+## Configuration Reference
+
+| Variable | Type | Required | Default | Constraints | Description |
+| --- | --- | --- | --- | --- | --- |
+| `NODE_ENV` | enum | — | `development` | `development`, `production` | — |
+| `PORT` | port | — | `3000` | min: 1, max: 65535 | HTTP server port |
+| `DATABASE_URL` | url | ✅ | — | protocols: postgres | PostgreSQL connection string |
+| `WORKERS` | integer | — | `4` | min: 1, max: 16 | — |
+| `DEBUG` | boolean | — | `false` | — | — |
+```
+
+**Options:**
+
+- `title` — Heading text (default: `"Environment Variables"`)
+- `includeConstraints` — Show constraints column (default: `true`)
+
+**Group expansion:**
+
+Group and `arrayOfGroups` fields are automatically expanded:
+
+```typescript
+const schema = {
+  db: eg.group({ HOST: eg.string(), PORT: eg.port() }),
+  servers: eg.arrayOfGroups({ HOST: eg.string() }),
+};
+
+// Generates rows for:
+// DB__HOST, DB__PORT, SERVERS_N_HOST (N = index placeholder)
+```
 
 ## Prefix Support
 

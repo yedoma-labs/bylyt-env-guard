@@ -210,3 +210,38 @@ describe("array minLength/maxLength", () => {
 		expect(f._options.maxLength).toBe(10);
 	});
 });
+
+describe("eg.arrayOfGroups", () => {
+	it("creates array-of-groups field", () => {
+		const g = eg.arrayOfGroups({ HOST: eg.string(), PORT: eg.port() });
+		expect(g._options.kind).toBe("array-of-groups");
+		expect(g._options.subSchema).toBeDefined();
+		expect(g._options.groupSeparator).toBe("_");
+	});
+
+	it("accepts custom separator", () => {
+		const g = eg.arrayOfGroups({ HOST: eg.string() }, { separator: "__" });
+		expect(g._options.groupSeparator).toBe("__");
+	});
+});
+
+describe("eg.record", () => {
+	it("creates record field with prefix", () => {
+		const r = eg.record("HTTP_HEADER_");
+		expect(r._options.kind).toBe("record");
+		expect(r._options.recordPrefix).toBe("HTTP_HEADER_");
+	});
+
+	it("creates record field with pattern", () => {
+		const r = eg.record(/^HTTP_/);
+		expect(r._options.kind).toBe("record");
+		expect(r._options.recordPattern).toBeInstanceOf(RegExp);
+	});
+
+	it("creates record field with no filter", () => {
+		const r = eg.record();
+		expect(r._options.kind).toBe("record");
+		expect(r._options.recordPrefix).toBeUndefined();
+		expect(r._options.recordPattern).toBeUndefined();
+	});
+});

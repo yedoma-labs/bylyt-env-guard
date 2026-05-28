@@ -10,7 +10,9 @@ export type SchemaFieldKind =
 	| "email"
 	| "json"
 	| "date"
-	| "group";
+	| "group"
+	| "array-of-groups"
+	| "record";
 
 export type ArrayItemKind = "string" | "number" | "integer" | "boolean";
 
@@ -39,6 +41,8 @@ export interface SchemaFieldOptions {
 	requiredIf?: (raw: Record<string, string | undefined>) => boolean;
 	subSchema?: SchemaDefinition;
 	groupSeparator?: string;
+	recordPrefix?: string;
+	recordPattern?: RegExp;
 }
 
 export interface SchemaField<T = unknown> {

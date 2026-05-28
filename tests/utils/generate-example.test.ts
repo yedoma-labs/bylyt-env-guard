@@ -69,4 +69,20 @@ describe("generateEnvExample", () => {
 		const out = generateEnvExample({ TS: eg.string().default(() => "now") });
 		expect(out).toContain("generated at runtime");
 	});
+
+	it("handles arrayOfGroups fields", () => {
+		const out = generateEnvExample({
+			servers: eg.arrayOfGroups({ HOST: eg.string(), PORT: eg.port() }),
+		});
+		expect(out).toContain("SERVERS_0_HOST");
+		expect(out).toContain("SERVERS_0_PORT");
+	});
+
+	it("handles record fields", () => {
+		const out = generateEnvExample({
+			headers: eg.record("HTTP_HEADER_"),
+		});
+		expect(out).toContain("HTTP_HEADER_");
+		expect(out).toContain("headers");
+	});
 });

@@ -327,4 +327,31 @@ describe("advanced features", () => {
 		expect(field._options.description).toBe("My description");
 		expect(field._options.example).toBe("my-value");
 	});
+
+	it("arrayOfGroups: reads indexed env vars", () => {
+		const env = createEnv({
+			schema: {
+				servers: eg.arrayOfGroups({ HOST: eg.string(), PORT: eg.port() }),
+			},
+			sources: [
+				{
+					SERVERS_0_HOST: "host1",
+					SERVERS_0_PORT: "3000",
+					SERVERS_1_HOST: "host2",
+					SERVERS_1_PORT: "4000",
+				},
+			],
+		});
+		expect(env.servers).toHaveLength(2);
+		expect(env.servers[0]).toEqual({ HOST: "host1", PORT: 3000 });
+		expect(env.servers[1]).toEqual({ HOST: "host2", PORT: 4000 });
+	});
+
+	it("record: captures prefixed vars", () => {
+		const env = createEnv({
+			schema: { headers: eg.record("HTTP_HEADER_") },
+			sources: [{ HTTP_HEADER_ACCEPT: "json", HTTP_HEADER_AUTH: "Bearer xyz" }],
+		});
+		expect(env.headers).toEqual({ ACCEPT: "json", AUTH: "Bearer xyz" });
+	});
 });

@@ -6,6 +6,44 @@ export function generateEnvExample(schema: SchemaDefinition): string {
 	for (const [key, field] of Object.entries(schema)) {
 		const opts = field._options;
 
+		// Handle array-of-groups fields
+		if (opts.kind === "array-of-groups" && opts.subSchema) {
+			const sep = opts.groupSeparator ?? "_";
+			const envPrefix = key.toUpperCase() + sep;
+			lines.push(`# ${key} (array of objects, indexed with ${sep}0${sep}, ${sep}1${sep}, ...)`);
+			for (const subKey of Object.keys(opts.subSchema)) {
+				const subOpts = opts.subSchema[subKey]!._options;
+				lines.push(
+					`${envPrefix}0${sep}${subKey}=${
+						subOpts.example !== undefined
+							? String(subOpts.example)
+							: subOpts.defaultValue !== undefined
+								? String(subOpts.defaultValue)
+								: ""
+					}`,
+				);
+			}
+			lines.push(`# ${envPrefix}1${sep}... (add more items as needed)`);
+			lines.push("");
+			continue;
+		}
+
+		// Handle record fields
+		if (opts.kind === "record") {
+			const pattern = opts.recordPrefix
+				? `${opts.recordPrefix}*`
+				: opts.recordPattern
+					? String(opts.recordPattern)
+					: "*";
+			lines.push(`# ${key} (captures all env vars matching: ${pattern})`);
+			if (opts.description) lines.push(`# ${opts.description}`);
+			if (opts.recordPrefix) {
+				lines.push(`# Example: ${opts.recordPrefix}MYKEY=value`);
+			}
+			lines.push("");
+			continue;
+		}
+
 		// Skip group fields — handled separately
 		if (opts.kind === "group" && opts.subSchema) {
 			const prefix = key.toUpperCase() + (opts.groupSeparator ?? "__");
@@ -82,6 +120,10 @@ function formatKind(opts: SchemaFieldOptions): string {
 			return `enum`;
 		case "array":
 			return opts.arrayItemKind ? `array<${opts.arrayItemKind}>` : "array";
+		case "array-of-groups":
+			return "array<object>";
+		case "record":
+			return "record";
 		default:
 			return opts.kind;
 	}

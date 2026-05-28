@@ -68,6 +68,12 @@ export function coerce(
 		case "group":
 			return raw;
 
+		case "array-of-groups":
+			return raw;
+
+		case "record":
+			return raw;
+
 		default:
 			return raw;
 	}

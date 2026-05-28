@@ -41,6 +41,12 @@ export function validateField(
 	if (kind === "group") {
 		return null;
 	}
+	if (kind === "array-of-groups") {
+		return null;
+	}
+	if (kind === "record") {
+		return null;
+	}
 	return null;
 }
 
