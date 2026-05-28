@@ -9,12 +9,44 @@ export function validateAndCoerce(
 	schema: SchemaDefinition,
 	resolved: ResolvedValues,
 ): Record<string, unknown> {
+	const { result, failures } = processSchema(schema, resolved);
+	if (failures.length > 0) throw new EnvValidationError(failures);
+	return result;
+}
+
+function processSchema(
+	schema: SchemaDefinition,
+	resolved: ResolvedValues,
+): { result: Record<string, unknown>; failures: ValidationFailure[] } {
 	const failures: ValidationFailure[] = [];
 	const result: Record<string, unknown> = {};
 
 	for (const [key, field] of Object.entries(schema)) {
-		const raw = resolved.raw[key];
 		const opts = field._options;
+
+		// Handle group fields
+		if (opts.kind === "group" && opts.subSchema) {
+			const separator = opts.groupSeparator ?? "__";
+			const envPrefix = key.toUpperCase() + separator;
+
+			// Build sub-resolved from the parent's merged map
+			const subRaw: Record<string, string | undefined> = {};
+			for (const subKey of Object.keys(opts.subSchema)) {
+				subRaw[subKey] = resolved.merged[envPrefix + subKey];
+			}
+			const subResolved: ResolvedValues = { raw: subRaw, merged: resolved.merged };
+
+			const sub = processSchema(opts.subSchema, subResolved);
+			for (const f of sub.failures) {
+				failures.push({ ...f, field: `${key}.${f.field}` });
+			}
+			if (sub.failures.length === 0) {
+				result[key] = sub.result;
+			}
+			continue;
+		}
+
+		const raw = resolved.raw[key];
 
 		// Handle missing values
 		if (raw === undefined) {
@@ -26,7 +58,8 @@ export function validateAndCoerce(
 				result[key] = opts.defaultValue;
 				continue;
 			}
-			if (opts.isRequired) {
+			const isRequired = opts.requiredIf ? opts.requiredIf(resolved.raw) : opts.isRequired;
+			if (isRequired) {
 				failures.push({ field: key, message: "is required but missing", code: "MISSING" });
 				continue;
 			}
@@ -71,11 +104,7 @@ export function validateAndCoerce(
 		result[key] = coerced;
 	}
 
-	if (failures.length > 0) {
-		throw new EnvValidationError(failures);
-	}
-
-	return result;
+	return { result, failures };
 }
 
 function maskValue(value: string, opts: SchemaFieldOptions): string {

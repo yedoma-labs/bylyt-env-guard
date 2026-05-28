@@ -9,7 +9,8 @@ export type SchemaFieldKind =
 	| "integer"
 	| "email"
 	| "json"
-	| "date";
+	| "date"
+	| "group";
 
 export type ArrayItemKind = "string" | "number" | "integer" | "boolean";
 
@@ -33,6 +34,11 @@ export interface SchemaFieldOptions {
 	customValidator?: (value: unknown) => string | null;
 	transform?: (value: unknown) => unknown;
 	deprecated?: string;
+	description?: string;
+	example?: unknown;
+	requiredIf?: (raw: Record<string, string | undefined>) => boolean;
+	subSchema?: SchemaDefinition;
+	groupSeparator?: string;
 }
 
 export interface SchemaField<T = unknown> {
@@ -42,6 +48,6 @@ export interface SchemaField<T = unknown> {
 
 export type SchemaDefinition = Record<string, SchemaField>;
 
-export type InferEnv<T extends SchemaDefinition> = {
+export type InferEnv<T extends SchemaDefinition> = Readonly<{
 	[K in keyof T]: T[K] extends SchemaField<infer U> ? U : never;
-};
+}>;

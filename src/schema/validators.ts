@@ -38,6 +38,9 @@ export function validateField(
 	if (kind === "date") {
 		return validateDate(key, value as Date, options);
 	}
+	if (kind === "group") {
+		return null;
+	}
 	return null;
 }
 

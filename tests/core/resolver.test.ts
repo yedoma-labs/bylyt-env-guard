@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { eg } from "../../src";
 import { resolveSources } from "../../src/core/resolver.js";
 
@@ -57,5 +57,52 @@ describe("aliases", () => {
 		};
 		const result = resolveSources(schema, [{ PORT: "9000", APP_PORT: "8080" }]);
 		expect(result.raw.PORT).toBe("9000");
+	});
+});
+
+describe("prefix support", () => {
+	it("resolves prefixed keys", () => {
+		const schema = { PORT: eg.number() };
+		const result = resolveSources(schema, [{ APP_PORT: "3000" }], { prefix: "APP_" });
+		expect(result.raw.PORT).toBe("3000");
+	});
+
+	it("exposes merged map", () => {
+		const schema = { PORT: eg.number() };
+		const result = resolveSources(schema, [{ PORT: "3000" }]);
+		expect(result.merged).toEqual({ PORT: "3000" });
+	});
+
+	it("resolves aliases with prefix", () => {
+		const schema = { PORT: eg.number().aliases("HTTP_PORT") };
+		const result = resolveSources(schema, [{ APP_HTTP_PORT: "8080" }], { prefix: "APP_" });
+		expect(result.raw.PORT).toBe("8080");
+	});
+});
+
+describe("strict mode", () => {
+	it("warns about unknown prefixed keys", () => {
+		const warns: string[] = [];
+		const spy = vi.spyOn(console, "warn").mockImplementation((msg) => warns.push(msg));
+		const schema = { PORT: eg.number() };
+		resolveSources(schema, [{ APP_PORT: "3000", APP_UNKNOWN: "x" }], {
+			prefix: "APP_",
+			strict: true,
+		});
+		spy.mockRestore();
+		expect(warns.some((w) => w.includes("APP_UNKNOWN"))).toBe(true);
+		expect(warns.some((w) => w.includes("APP_PORT"))).toBe(false);
+	});
+
+	it("recognizes aliases in strict mode", () => {
+		const warns: string[] = [];
+		const spy = vi.spyOn(console, "warn").mockImplementation((msg) => warns.push(msg));
+		const schema = { PORT: eg.number().aliases("HTTP_PORT") };
+		resolveSources(schema, [{ APP_PORT: "3000", APP_HTTP_PORT: "8080" }], {
+			prefix: "APP_",
+			strict: true,
+		});
+		spy.mockRestore();
+		expect(warns.length).toBe(0);
 	});
 });

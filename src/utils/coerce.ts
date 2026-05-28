@@ -65,6 +65,9 @@ export function coerce(
 			return d;
 		}
 
+		case "group":
+			return raw;
+
 		default:
 			return raw;
 	}

@@ -164,3 +164,49 @@ describe("new builder methods", () => {
 		expect(field._options.isRequired).toBe(false);
 	});
 });
+
+describe("describe and example", () => {
+	it("sets description", () => {
+		const f = eg.string().describe("My field");
+		expect(f._options.description).toBe("My field");
+	});
+
+	it("sets example", () => {
+		const f = eg.number().example(42);
+		expect(f._options.example).toBe(42);
+	});
+});
+
+describe("requiredIf", () => {
+	it("sets requiredIf function", () => {
+		const fn = (raw: Record<string, string | undefined>) => raw.USE_DB === "true";
+		const f = eg.url().requiredIf(fn);
+		expect(f._options.requiredIf).toBe(fn);
+	});
+});
+
+describe("eg.group", () => {
+	it("creates group field with subSchema", () => {
+		const g = eg.group({ HOST: eg.string(), PORT: eg.port() });
+		expect(g._options.kind).toBe("group");
+		expect(g._options.subSchema).toBeDefined();
+		expect(g._options.groupSeparator).toBe("__");
+	});
+
+	it("accepts custom separator", () => {
+		const g = eg.group({ HOST: eg.string() }, { separator: "_" });
+		expect(g._options.groupSeparator).toBe("_");
+	});
+});
+
+describe("array minLength/maxLength", () => {
+	it("sets minLength on array", () => {
+		const f = eg.array().minLength(2);
+		expect(f._options.minLength).toBe(2);
+	});
+
+	it("sets maxLength on array", () => {
+		const f = eg.array().maxLength(10);
+		expect(f._options.maxLength).toBe(10);
+	});
+});

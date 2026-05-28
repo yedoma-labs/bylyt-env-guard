@@ -1,4 +1,4 @@
-import type { ArrayItemKind, SchemaField, SchemaFieldOptions } from "./types.js";
+import type { ArrayItemKind, SchemaDefinition, SchemaField, SchemaFieldOptions } from "./types.js";
 
 type ArrayItemKindToType = {
 	string: string;
@@ -61,6 +61,21 @@ class FieldBuilder<T> implements SchemaField<T> {
 
 	deprecated(message?: string): this {
 		this._options.deprecated = message ?? "This environment variable is deprecated";
+		return this;
+	}
+
+	describe(text: string): this {
+		this._options.description = text;
+		return this;
+	}
+
+	example(value: unknown): this {
+		this._options.example = value;
+		return this;
+	}
+
+	requiredIf(fn: (raw: Record<string, string | undefined>) => boolean): this {
+		this._options.requiredIf = fn;
 		return this;
 	}
 }
@@ -203,6 +218,32 @@ class ArrayFieldBuilder<T extends unknown[] | undefined = string[]> extends Fiel
 			ArrayItemKindToType[K][] | (undefined extends T ? undefined : never)
 		>;
 	}
+
+	minLength(n: number): this {
+		this._options.minLength = n;
+		return this;
+	}
+
+	maxLength(n: number): this {
+		this._options.maxLength = n;
+		return this;
+	}
+}
+
+type InferGroup<T extends SchemaDefinition> = {
+	[K in keyof T]: T[K] extends SchemaField<infer U> ? U : never;
+};
+
+class GroupFieldBuilder<T extends SchemaDefinition> extends FieldBuilder<InferGroup<T>> {
+	constructor(subSchema: T, opts?: { separator?: string }) {
+		super({
+			kind: "group",
+			isRequired: true,
+			isSensitive: false,
+			subSchema: subSchema as SchemaDefinition,
+			groupSeparator: opts?.separator ?? "__",
+		});
+	}
 }
 
 export const eg = {
@@ -217,4 +258,6 @@ export const eg = {
 	json: <T = unknown>() => new JsonFieldBuilder<T>(),
 	date: () => new DateFieldBuilder(),
 	array: () => new ArrayFieldBuilder(),
+	group: <T extends SchemaDefinition>(subSchema: T, opts?: { separator?: string }) =>
+		new GroupFieldBuilder<T>(subSchema, opts),
 };

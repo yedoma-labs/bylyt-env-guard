@@ -222,3 +222,109 @@ describe("new features integration", () => {
 		expect(callCount).toBe(1);
 	});
 });
+
+describe("advanced features", () => {
+	it("prefix: reads APP_PORT when prefix is APP_", () => {
+		const env = createEnv({
+			schema: { PORT: eg.port() },
+			sources: [{ APP_PORT: "9000" }],
+			prefix: "APP_",
+		});
+		expect(env.PORT).toBe(9000);
+	});
+
+	it("profiles: applies profile defaults", () => {
+		const env = createEnv({
+			schema: { LOG_LEVEL: eg.enum(["debug", "info", "warn"] as const) },
+			sources: [{}],
+			profiles: { test: { LOG_LEVEL: "debug" } },
+			activeProfile: "test",
+		});
+		expect(env.LOG_LEVEL).toBe("debug");
+	});
+
+	it("profiles: source overrides profile default", () => {
+		const env = createEnv({
+			schema: { LOG_LEVEL: eg.enum(["debug", "info", "warn"] as const) },
+			sources: [{ LOG_LEVEL: "warn" }],
+			profiles: { test: { LOG_LEVEL: "debug" } },
+			activeProfile: "test",
+		});
+		expect(env.LOG_LEVEL).toBe("warn");
+	});
+
+	it("requiredIf: field required when condition true", () => {
+		expect(() =>
+			createEnv({
+				schema: {
+					USE_DB: eg.enum(["true", "false"] as const).default("true"),
+					DB_URL: eg.url().requiredIf((raw) => raw.USE_DB === "true"),
+				},
+				sources: [{ USE_DB: "true" }],
+			}),
+		).toThrow(EnvValidationError);
+	});
+
+	it("requiredIf: field not required when condition false", () => {
+		const env = createEnv({
+			schema: {
+				USE_DB: eg.enum(["true", "false"] as const),
+				DB_URL: eg.url().requiredIf((raw) => raw.USE_DB === "true"),
+			},
+			sources: [{ USE_DB: "false" }],
+		});
+		expect(env.DB_URL).toBeUndefined();
+	});
+
+	it("group: resolves nested env vars", () => {
+		const env = createEnv({
+			schema: {
+				db: eg.group({
+					HOST: eg.string().default("localhost"),
+					PORT: eg.port().default(5432),
+				}),
+			},
+			sources: [{ DB__HOST: "mydb.example.com", DB__PORT: "5433" }],
+		});
+		expect(env.db.HOST).toBe("mydb.example.com");
+		expect(env.db.PORT).toBe(5433);
+	});
+
+	it("group: uses subfield defaults when env vars absent", () => {
+		const env = createEnv({
+			schema: {
+				db: eg.group({
+					HOST: eg.string().default("localhost"),
+					PORT: eg.port().default(5432),
+				}),
+			},
+			sources: [{}],
+		});
+		expect(env.db.HOST).toBe("localhost");
+		expect(env.db.PORT).toBe(5432);
+	});
+
+	it("group: custom separator", () => {
+		const env = createEnv({
+			schema: {
+				db: eg.group({ HOST: eg.string() }, { separator: "_" }),
+			},
+			sources: [{ DB_HOST: "customdb" }],
+		});
+		expect(env.db.HOST).toBe("customdb");
+	});
+
+	it("result is frozen (immutable)", () => {
+		const env = createEnv({
+			schema: { PORT: eg.port().default(3000) },
+			sources: [{}],
+		});
+		expect(Object.isFrozen(env)).toBe(true);
+	});
+
+	it("describe and example are stored in options", () => {
+		const field = eg.string().describe("My description").example("my-value");
+		expect(field._options.description).toBe("My description");
+		expect(field._options.example).toBe("my-value");
+	});
+});
