@@ -1,7 +1,9 @@
-import { watch } from "node:fs";
+import { readFileSync, watch } from "node:fs";
 import { resolve } from "node:path";
 import { EnvValidationError } from "../errors/validation-error.js";
 import type { InferEnv, SchemaDefinition } from "../schema/types.js";
+import { deepFreeze } from "../utils/deep-freeze.js";
+import { parseDotenv } from "../utils/dotenv.js";
 import type { EnvSource } from "./parser.js";
 import { resolveSources } from "./resolver.js";
 import { validateAndCoerce } from "./validator.js";
@@ -34,14 +36,29 @@ export function watchEnv<T extends SchemaDefinition>(
 		(s): s is string => typeof s === "string",
 	);
 
-	function evaluate(): void {
+	function evaluate(fileSnapshots?: Map<string, string>): void {
 		try {
 			const profileName = activeProfile ?? process.env.NODE_ENV;
 			const profileSource = profileName && profiles?.[profileName] ? profiles[profileName] : {};
-			const sources = [profileSource, ...(options.sources ?? [process.env])];
+
+			// Build sources with file snapshots if provided (TOCTOU-safe)
+			let sources: EnvSource[];
+			if (fileSnapshots) {
+				// Use file snapshots + non-file sources
+				const nonFileSources = (options.sources ?? [process.env]).filter(
+					(s) => typeof s !== "string",
+				);
+				const fileContents = Array.from(fileSnapshots.values()).map((content) =>
+					parseDotenv(content),
+				);
+				sources = [profileSource, ...fileContents, ...nonFileSources];
+			} else {
+				sources = [profileSource, ...(options.sources ?? [process.env])];
+			}
+
 			const resolved = resolveSources(schema, sources, { prefix });
 			const result = validateAndCoerce(schema, resolved);
-			callback({ env: Object.freeze(result) as Readonly<InferEnv<T>>, error: null });
+			callback({ env: deepFreeze(result) as Readonly<InferEnv<T>>, error: null });
 		} catch (err) {
 			const validationErr =
 				err instanceof EnvValidationError
@@ -60,18 +77,35 @@ export function watchEnv<T extends SchemaDefinition>(
 		return { stop: () => {} };
 	}
 
-	// Debounced re-evaluation on file change
+	// Debounced re-evaluation with file content snapshots
 	const watchers: ReturnType<typeof watch>[] = [];
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let pendingSnapshots: Map<string, string> | null = null;
 
-	const handleChange = () => {
+	const handleChange = (filePath: string) => {
+		// Read file immediately to prevent TOCTOU
+		try {
+			const content = readFileSync(resolve(filePath), "utf-8");
+			if (!pendingSnapshots) pendingSnapshots = new Map();
+			pendingSnapshots.set(filePath, content);
+		} catch (err) {
+			console.warn(`[env-guard] Failed to read changed file: ${filePath}`, err);
+			return;
+		}
+
+		// Debounce validation with snapshot
 		if (debounceTimer !== null) clearTimeout(debounceTimer);
-		debounceTimer = setTimeout(evaluate, debounceMs);
+		debounceTimer = setTimeout(() => {
+			if (pendingSnapshots) {
+				evaluate(pendingSnapshots);
+				pendingSnapshots = null;
+			}
+		}, debounceMs);
 	};
 
 	for (const filePath of fileSources) {
 		try {
-			const watcher = watch(resolve(filePath), handleChange);
+			const watcher = watch(resolve(filePath), () => handleChange(filePath));
 			watchers.push(watcher);
 		} catch (err) {
 			console.warn(`[env-guard] Failed to watch file: ${filePath}`, err);

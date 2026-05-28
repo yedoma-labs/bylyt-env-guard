@@ -2,6 +2,7 @@ import type { EnvSource } from "./core/parser.js";
 import { resolveSources } from "./core/resolver.js";
 import { validateAndCoerce } from "./core/validator.js";
 import type { InferEnv, SchemaDefinition } from "./schema/types.js";
+import { deepFreeze } from "./utils/deep-freeze.js";
 
 export type { WatchCallback, WatchHandle, WatchOptions } from "./core/watcher.js";
 export { watchEnv } from "./core/watcher.js";
@@ -20,17 +21,6 @@ export interface CreateEnvOptions<T extends SchemaDefinition> {
 	strict?: boolean;
 	profiles?: Record<string, Record<string, string>>;
 	activeProfile?: string;
-}
-
-function deepFreeze<T>(obj: T, seen = new WeakSet()): T {
-	if (obj === null || typeof obj !== "object") return obj;
-	if (seen.has(obj as object)) return obj;
-	seen.add(obj as object);
-	Object.freeze(obj);
-	for (const value of Object.values(obj as object)) {
-		deepFreeze(value, seen);
-	}
-	return obj;
 }
 
 export function createEnv<T extends SchemaDefinition>(options: CreateEnvOptions<T>): InferEnv<T> {

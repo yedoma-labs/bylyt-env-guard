@@ -54,8 +54,10 @@ class FieldBuilder<T> implements SchemaField<T> {
 
 	transform<R>(
 		fn: (value: Exclude<T, undefined>) => R,
+		options?: { timeout?: number },
 	): FieldBuilder<R | (undefined extends T ? undefined : never)> {
 		this._options.transform = fn as (value: unknown) => unknown;
+		this._options.transformTimeout = options?.timeout ?? 5000;
 		return this as unknown as FieldBuilder<R | (undefined extends T ? undefined : never)>;
 	}
 

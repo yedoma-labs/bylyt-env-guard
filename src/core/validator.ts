@@ -5,6 +5,27 @@ import { validateField } from "../schema/validators.js";
 import { CoercionError, coerce } from "../utils/coerce.js";
 import type { ResolvedValues } from "./resolver.js";
 
+function runTransformWithTimeout(
+	transform: (value: unknown) => unknown,
+	value: unknown,
+	timeout: number,
+	fieldName: string,
+): unknown {
+	const start = Date.now();
+	try {
+		const result = transform(value);
+		const elapsed = Date.now() - start;
+		if (elapsed > timeout) {
+			console.warn(
+				`[env-guard] Transform for "${fieldName}" took ${elapsed}ms (timeout: ${timeout}ms)`,
+			);
+		}
+		return result;
+	} catch (err) {
+		throw new Error(`Transform failed for field "${fieldName}": ${String(err)}`);
+	}
+}
+
 export function validateAndCoerce(
 	schema: SchemaDefinition,
 	resolved: ResolvedValues,
@@ -161,7 +182,21 @@ function processSchema(
 
 		// Apply transform
 		if (opts.transform) {
-			coerced = opts.transform(coerced);
+			try {
+				coerced = runTransformWithTimeout(
+					opts.transform,
+					coerced,
+					opts.transformTimeout ?? 5000,
+					key,
+				);
+			} catch (err) {
+				failures.push({
+					field: key,
+					message: String(err),
+					code: "TRANSFORM_ERROR",
+				});
+				continue;
+			}
 		}
 
 		result[key] = coerced;

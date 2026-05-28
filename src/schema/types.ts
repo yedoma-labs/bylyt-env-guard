@@ -35,6 +35,7 @@ export interface SchemaFieldOptions {
 	arrayItemKind?: ArrayItemKind;
 	customValidator?: (value: unknown) => string | null;
 	transform?: (value: unknown) => unknown;
+	transformTimeout?: number;
 	deprecated?: string;
 	description?: string;
 	example?: unknown;
