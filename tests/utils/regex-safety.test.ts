@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { checkRegexSafety, testRegexWithTimeout } from "../../src/utils/regex-safety";
 
 describe("checkRegexSafety", () => {
@@ -45,10 +45,14 @@ describe("checkRegexSafety", () => {
 	});
 
 	it("warns about .* or .+ without anchors", () => {
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
 		const pattern = /.*/;
 		const error = checkRegexSafety(pattern);
 		expect(error).toBeNull(); // Doesn't reject, just warns
-		// Warning is logged, we're not testing console output here
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("without anchors"));
+
+		warnSpy.mockRestore();
 	});
 });
 
