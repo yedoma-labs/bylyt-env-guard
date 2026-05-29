@@ -13,6 +13,7 @@ export type { ValidationFailure } from "./schema/validators.js";
 export type { GenerateMarkdownDocsOptions } from "./utils/generate-docs.js";
 export { generateMarkdownDocs } from "./utils/generate-docs.js";
 export { generateEnvExample } from "./utils/generate-example.js";
+export { checkRegexSafety, testRegexWithTimeout } from "./utils/regex-safety.js";
 
 export interface CreateEnvOptions<T extends SchemaDefinition> {
 	schema: T;

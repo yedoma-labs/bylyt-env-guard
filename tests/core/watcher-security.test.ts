@@ -46,7 +46,7 @@ describe("watcher security", () => {
 		await new Promise((r) => setTimeout(r, 50));
 
 		// Temporarily delete file to trigger read error on next change
-		const tempPath = envPath + ".tmp";
+		const tempPath = `${envPath}.tmp`;
 		writeFileSync(tempPath, "VALUE=test\n");
 		unlinkSync(envPath);
 

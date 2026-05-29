@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CoercionError, coerce } from "../../src/utils/coerce.js";
+import { coerce } from "../../src/utils/coerce.js";
 
 describe("coerce security", () => {
 	describe("JSON bomb protection", () => {

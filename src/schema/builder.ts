@@ -1,3 +1,4 @@
+import { checkRegexSafety } from "../utils/regex-safety.js";
 import type { ArrayItemKind, SchemaDefinition, SchemaField, SchemaFieldOptions } from "./types.js";
 
 type ArrayItemKindToType = {
@@ -98,6 +99,15 @@ class StringFieldBuilder<T extends string | undefined = string> extends FieldBui
 	}
 
 	pattern(re: RegExp): this {
+		// Check for ReDoS vulnerabilities
+		const safetyError = checkRegexSafety(re);
+		if (safetyError) {
+			throw new Error(
+				`Unsafe regex pattern "${re.source}": ${safetyError}. ` +
+					"Avoid nested quantifiers, alternations with quantifiers, and exponential patterns. " +
+					"See: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS",
+			);
+		}
 		this._options.pattern = re;
 		return this;
 	}

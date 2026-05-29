@@ -59,34 +59,42 @@
    - Warns on whitespace-only separators
    - Prevents unexpected parsing behavior
 
+9. **ReDoS Protection** (Added in v0.3.4)
+   - Blocks nested quantifiers: `(a+)+`, `(a*)*`
+   - Blocks alternations with quantifiers: `(a|ab)+`
+   - Blocks exponential patterns: `(.+)+`, `(.*)*`
+   - Warns on unbounded wildcards without anchors
+   - Throws at schema definition time with OWASP references
+
+10. **Transform Timeout Monitoring** (Added in v0.3.4)
+    - Measures transform execution time
+    - Warns when transforms exceed 5000ms (configurable)
+    - Helps identify slow transforms in development
+    - Cannot abort due to JavaScript single-threaded nature
+
 ## Known Limitations
 
 ### ⚠️ Not Protected Against
 
 1. **Transform Function Resource Exhaustion**
-   - User-supplied `.transform()` functions run without timeout
+   - User-supplied `.transform()` functions cannot be truly aborted (JavaScript is single-threaded)
    - Infinite loops or expensive operations will hang validation
+   - Timeout monitoring warns after completion but can't interrupt execution
    - **Mitigation:** Keep transforms pure, fast (<10ms), and thoroughly tested
+   - **Status:** Monitoring added in v0.3.4, true abortion not possible without Worker threads
 
 2. **Default Factory Side Effects**
    - Factory functions (`.default(() => ...)`) execute on every validation
    - In watch mode, called on every file change
+   - No timeout or side-effect detection
    - **Mitigation:** Use only pure, idempotent factories with no I/O
+   - **Status:** No protection planned (factories are developer code)
 
-3. **User-Supplied Regex ReDoS**
-   - `.pattern()` accepts arbitrary regex without validation
-   - Catastrophic backtracking patterns can cause DoS
-   - **Mitigation:** Test regex patterns thoroughly, avoid nested quantifiers
-
-4. **TOCTOU in Watch Mode**
-   - File can be modified between watch event and read operation
-   - 100ms debounce window allows race conditions
-   - **Mitigation:** Only acceptable risk in developer workflows, not production
-
-5. **Path Traversal in File Sources**
+3. **Path Traversal in File Sources**
    - `sources: ["../../etc/passwd"]` reads arbitrary files
    - **Not a vulnerability:** Sources array is developer-controlled code
    - **Mitigation:** Never construct sources from user input
+   - **Status:** By design, not a bug
 
 ## Reporting Vulnerabilities
 
@@ -163,6 +171,12 @@ We aim to respond within 48 hours and will coordinate disclosure.
 Run `npm audit` regularly. This library has **zero runtime dependencies** to minimize supply chain risk.
 
 ## Security Changelog
+
+### v0.3.4 (2026-05-29)
+- **Fixed:** TOCTOU race condition in watch mode - files now read immediately and validated from snapshots
+- **Added:** ReDoS protection for `.pattern()` - blocks nested quantifiers, alternations, and exponential patterns
+- **Added:** Transform timeout monitoring - warns when transforms exceed configurable timeout (default: 5s)
+- **Improved:** Warning messages now use emoji for better visibility
 
 ### v0.3.0 (2026-05-28)
 - Added JSON bomb protection (size + depth limits)

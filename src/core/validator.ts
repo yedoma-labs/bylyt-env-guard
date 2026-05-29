@@ -11,13 +11,15 @@ function runTransformWithTimeout(
 	timeout: number,
 	fieldName: string,
 ): unknown {
+	// Note: Cannot truly abort synchronous transforms in JavaScript.
+	// This measures elapsed time and warns if timeout exceeded.
 	const start = Date.now();
 	try {
 		const result = transform(value);
 		const elapsed = Date.now() - start;
 		if (elapsed > timeout) {
 			console.warn(
-				`[env-guard] Transform for "${fieldName}" took ${elapsed}ms (timeout: ${timeout}ms)`,
+				`⚠️  [env-guard] Transform for "${fieldName}" took ${elapsed}ms (timeout: ${timeout}ms). Keep transforms fast and pure.`,
 			);
 		}
 		return result;
