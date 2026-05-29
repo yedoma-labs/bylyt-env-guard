@@ -639,6 +639,9 @@ createEnv({
 git clone https://github.com/yedoma-labs/bylyt-env-guard.git
 cd bylyt-env-guard
 bun install
+
+# Install git hooks (pre-commit linting, pre-push tests)
+npx simple-git-hooks
 ```
 
 ### Development Commands
