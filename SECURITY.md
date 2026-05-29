@@ -98,9 +98,7 @@
 
 ## Reporting Vulnerabilities
 
-If you discover a security vulnerability in `@yedoma-labs/bylyt-env-guard`, please email:
-
-**security@yedoma-labs.com**
+If you discover a security vulnerability in `@yedoma-labs/bylyt-env-guard`, please open a GitHub issue.
 
 Please include:
 
