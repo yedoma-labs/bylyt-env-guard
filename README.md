@@ -1,5 +1,10 @@
 # @yedoma-labs/bylyt-env-guard
 
+<picture>
+  <source media="(max-width: 640px)" srcset="https://raw.githubusercontent.com/yedoma-labs/assets/main/resized/banner-resized-mobile.png">
+  <img src="https://raw.githubusercontent.com/yedoma-labs/assets/main/resized/banner-resized.png" alt="Project Header">
+</picture>
+
 [![CI](https://github.com/yedoma-labs/bylyt-env-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/yedoma-labs/bylyt-env-guard/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
 [![npm downloads](https://img.shields.io/npm/dm/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
