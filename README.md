@@ -3,9 +3,9 @@
 [![CI](https://github.com/yedoma-labs/bylyt-env-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/yedoma-labs/bylyt-env-guard/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
 [![npm downloads](https://img.shields.io/npm/dm/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
-[![License](https://img.shields.io/npm/l/@yedoma-labs/bylyt-env-guard)](LICENSE)
 [![Node.js](https://img.shields.io/node/v/@yedoma-labs/bylyt-env-guard)](https://www.npmjs.com/package/@yedoma-labs/bylyt-env-guard)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x+-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
+[![License](https://img.shields.io/npm/l/@yedoma-labs/bylyt-env-guard)](LICENSE)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yedoma-labs/bylyt-env-guard)](https://bundlephobia.com/package/@yedoma-labs/bylyt-env-guard)
 
 Type-safe, zero-dependency environment variable validation for Node.js. Fail fast with clear, collected error messages.
