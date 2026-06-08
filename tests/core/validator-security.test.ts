@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { eg } from "../../src";
 import { validateAndCoerce } from "../../src/core/validator.js";
+import { EnvValidationError } from "../../src/errors/validation-error.js";
 
 describe("validator security", () => {
 	describe("transform timeout detection", () => {
@@ -39,8 +40,8 @@ describe("validator security", () => {
 				validateAndCoerce(schema, { raw: { BAD: "test" }, merged: {} });
 				expect.unreachable();
 			} catch (err) {
-				expect(err).toBeInstanceOf(Error);
-				const failures = (err as any).failures;
+				expect(err).toBeInstanceOf(EnvValidationError);
+				const failures = (err as EnvValidationError).failures;
 				expect(failures).toBeDefined();
 				expect(failures[0]?.code).toBe("TRANSFORM_ERROR");
 			}
