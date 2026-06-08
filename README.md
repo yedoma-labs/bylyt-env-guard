@@ -31,7 +31,6 @@ Type-safe, zero-dependency environment variable validation for Node.js. Fail fas
 
 ```bash
 npm install @yedoma-labs/bylyt-env-guard
-bun add @yedoma-labs/bylyt-env-guard
 pnpm add @yedoma-labs/bylyt-env-guard
 ```
 
@@ -639,7 +638,7 @@ createEnv({
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) v1.1+
+- [pnpm](https://pnpm.io/) v9+
 - Node.js 20 or 22
 
 ### Setup
@@ -647,7 +646,7 @@ createEnv({
 ```bash
 git clone https://github.com/yedoma-labs/bylyt-env-guard.git
 cd bylyt-env-guard
-bun install
+pnpm install
 
 # Install git hooks (pre-commit linting, pre-push tests)
 npx simple-git-hooks
@@ -657,25 +656,25 @@ npx simple-git-hooks
 
 ```bash
 # Run tests
-bun run test
+pnpm test
 
 # Run tests in watch mode
-bun run test:watch
+pnpm test:watch
 
 # Run tests with coverage
-bun run test:coverage
+pnpm test:coverage
 
 # Type-check without emitting
-bun run typecheck
+pnpm typecheck
 
 # Lint & format check
-bun run lint
+pnpm lint
 
 # Auto-fix lint & format issues
-bun run lint:fix
+pnpm lint:fix
 
 # Build (ESM + CJS + type declarations)
-bun run build
+pnpm build
 ```
 
 ### Project Structure
@@ -696,7 +695,7 @@ tests/
 
 ### Build Output
 
-`bun run build` produces the following in `dist/`:
+`pnpm build` produces the following in `dist/`:
 
 | File | Format | Purpose |
 |---|---|---|
@@ -711,7 +710,7 @@ tests/
 Releases are automated via GitHub Actions. To publish a new version:
 
 ```bash
-bun version patch   # or minor / major
+pnpm version patch   # or minor / major
 git push --follow-tags
 ```
 
