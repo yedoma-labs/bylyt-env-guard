@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/npm/l/@yedoma-labs/bylyt-env-guard)](LICENSE)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@yedoma-labs/bylyt-env-guard)](https://bundlephobia.com/package/@yedoma-labs/bylyt-env-guard)
 
-Type-safe, zero-dependency environment variable validation for Node.js. Fail fast with clear, collected error messages.
+> Type-safe, zero-dependency environment variable validation for Node.js. Fail fast with clear, collected error messages.
 
 ## Features
 
