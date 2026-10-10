@@ -1,3 +1,11 @@
+## [0.3.6](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.5...v0.3.6) (2026-10-10)
+
+
+### Bug Fixes
+
+* **ci:** update pnpm to v11 and add packageManager field ([e4fb09e](https://github.com/yedoma-labs/bylyt-env-guard/commit/e4fb09e80531b10c762a4556be69460baa81f0a7))
+* replace 'any' type with EnvValidationError in security test ([8b4291f](https://github.com/yedoma-labs/bylyt-env-guard/commit/8b4291fefbed390ff1e23b4367d355a43947566f))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
