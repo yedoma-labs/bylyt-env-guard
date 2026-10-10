@@ -1,3 +1,10 @@
+## [0.3.7](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.6...v0.3.7) (2026-10-10)
+
+
+### Bug Fixes
+
+* **deps:** override vulnerable transitive dependencies ([#8](https://github.com/yedoma-labs/bylyt-env-guard/issues/8)) ([15c7fc2](https://github.com/yedoma-labs/bylyt-env-guard/commit/15c7fc285ac9b98c23b2488d81e6a9d30dee7b26))
+
 ## [0.3.6](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.5...v0.3.6) (2026-10-10)
 
 
