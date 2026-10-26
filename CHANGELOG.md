@@ -1,3 +1,10 @@
+## [0.3.8](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.7...v0.3.8) (2026-10-26)
+
+
+### Bug Fixes
+
+* **deps:** update dependencies to latest ([#15](https://github.com/yedoma-labs/bylyt-env-guard/issues/15)) ([79552ae](https://github.com/yedoma-labs/bylyt-env-guard/commit/79552ae1c243b28a64aefaeb8a71e03753103d0b))
+
 ## [0.3.7](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.6...v0.3.7) (2026-10-10)
 
 ### Bug Fixes
