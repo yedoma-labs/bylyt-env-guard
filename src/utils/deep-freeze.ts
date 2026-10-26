@@ -1,4 +1,4 @@
-export function deepFreeze<T>(obj: T, seen = new WeakSet()): T {
+export function deepFreeze<T>(obj: T, seen: WeakSet<object> = new WeakSet()): T {
 	if (obj === null || typeof obj !== "object") return obj;
 	if (seen.has(obj as object)) return obj;
 	seen.add(obj as object);

@@ -114,43 +114,45 @@ We aim to respond within 48 hours and will coordinate disclosure.
 ### For Library Users
 
 1. **Never pass user input to schema definitions**
+
    ```ts
    // ❌ BAD
    const pattern = new RegExp(userInput);
    eg.string().pattern(pattern);
-   
-   // ✅ GOOD
+      // ✅ GOOD
    eg.string().pattern(/^[a-z0-9]+$/);
    ```
 
 2. **Keep transform functions pure and fast**
+
    ```ts
    // ❌ BAD
    .transform((v) => {
      fs.readFileSync('/etc/passwd'); // side effect
      return v;
    })
-   
-   // ✅ GOOD
+      // ✅ GOOD
    .transform((v) => v.toUpperCase())
    ```
 
 3. **Use `.sensitive()` for secrets**
+
    ```ts
    API_KEY: eg.string().minLength(32).sensitive()
    // Masks value in error messages
    ```
 
 4. **Validate `.env` file sources**
+
    ```ts
    // ❌ BAD: accepts any file path
    sources: [process.env.ENV_FILE]
-   
-   // ✅ GOOD: validate path is relative to project
+      // ✅ GOOD: validate path is relative to project
    sources: [".env", ".env.local"]
    ```
 
 5. **Freeze config objects (automatic since v0.2.0)**
+
    ```ts
    const env = createEnv({ schema });
    env.PORT = 9999; // TypeError: Cannot assign to read only property
@@ -171,12 +173,14 @@ Run `npm audit` regularly. This library has **zero runtime dependencies** to min
 ## Security Changelog
 
 ### v0.3.4 (2026-05-29)
+
 - **Fixed:** TOCTOU race condition in watch mode - files now read immediately and validated from snapshots
 - **Added:** ReDoS protection for `.pattern()` - blocks nested quantifiers, alternations, and exponential patterns
 - **Added:** Transform timeout monitoring - warns when transforms exceed configurable timeout (default: 5s)
 - **Improved:** Warning messages now use emoji for better visibility
 
 ### v0.3.0 (2026-05-28)
+
 - Added JSON bomb protection (size + depth limits)
 - Added integer precision protection (MAX_SAFE_INTEGER)
 - Added timing-safe enum comparison for sensitive fields
@@ -185,6 +189,7 @@ Run `npm audit` regularly. This library has **zero runtime dependencies** to min
 - Added prototype pollution prevention
 
 ### v0.2.0 (2026-05-28)
+
 - Implemented deep freeze for immutable results
 - Added sensitive field masking in errors
 

@@ -292,20 +292,26 @@ class RecordFieldBuilder<
 }
 
 export const eg = {
-	string: () => new StringFieldBuilder(),
-	number: () => new NumberFieldBuilder(),
-	integer: () => new IntegerFieldBuilder(),
-	boolean: () => new BooleanFieldBuilder(),
-	enum: <T extends string>(values: readonly T[]) => new EnumFieldBuilder<T>(values),
-	url: () => new UrlFieldBuilder(),
-	port: () => new PortFieldBuilder(),
-	email: () => new EmailFieldBuilder(),
-	json: <T = unknown>() => new JsonFieldBuilder<T>(),
-	date: () => new DateFieldBuilder(),
-	array: () => new ArrayFieldBuilder(),
-	group: <T extends SchemaDefinition>(subSchema: T, opts?: { separator?: string }) =>
-		new GroupFieldBuilder<T>(subSchema, opts),
-	arrayOfGroups: <T extends SchemaDefinition>(subSchema: T, opts?: { separator?: string }) =>
-		new ArrayOfGroupsFieldBuilder<T>(subSchema, opts),
-	record: (prefixOrPattern?: string | RegExp) => new RecordFieldBuilder(prefixOrPattern),
+	string: (): StringFieldBuilder => new StringFieldBuilder(),
+	number: (): NumberFieldBuilder => new NumberFieldBuilder(),
+	integer: (): IntegerFieldBuilder => new IntegerFieldBuilder(),
+	boolean: (): BooleanFieldBuilder => new BooleanFieldBuilder(),
+	enum: <T extends string>(values: readonly T[]): EnumFieldBuilder<T> =>
+		new EnumFieldBuilder<T>(values),
+	url: (): UrlFieldBuilder => new UrlFieldBuilder(),
+	port: (): PortFieldBuilder => new PortFieldBuilder(),
+	email: (): EmailFieldBuilder => new EmailFieldBuilder(),
+	json: <T = unknown>(): JsonFieldBuilder<T> => new JsonFieldBuilder<T>(),
+	date: (): DateFieldBuilder => new DateFieldBuilder(),
+	array: (): ArrayFieldBuilder => new ArrayFieldBuilder(),
+	group: <T extends SchemaDefinition>(
+		subSchema: T,
+		opts?: { separator?: string },
+	): GroupFieldBuilder<T> => new GroupFieldBuilder<T>(subSchema, opts),
+	arrayOfGroups: <T extends SchemaDefinition>(
+		subSchema: T,
+		opts?: { separator?: string },
+	): ArrayOfGroupsFieldBuilder<T> => new ArrayOfGroupsFieldBuilder<T>(subSchema, opts),
+	record: (prefixOrPattern?: string | RegExp): RecordFieldBuilder =>
+		new RecordFieldBuilder(prefixOrPattern),
 };

@@ -1,17 +1,15 @@
 ## [0.3.7](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.6...v0.3.7) (2026-10-10)
 
-
 ### Bug Fixes
 
-* **deps:** override vulnerable transitive dependencies ([#8](https://github.com/yedoma-labs/bylyt-env-guard/issues/8)) ([15c7fc2](https://github.com/yedoma-labs/bylyt-env-guard/commit/15c7fc285ac9b98c23b2488d81e6a9d30dee7b26))
+- **deps:** override vulnerable transitive dependencies ([#8](https://github.com/yedoma-labs/bylyt-env-guard/issues/8)) ([15c7fc2](https://github.com/yedoma-labs/bylyt-env-guard/commit/15c7fc285ac9b98c23b2488d81e6a9d30dee7b26))
 
 ## [0.3.6](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.5...v0.3.6) (2026-10-10)
 
-
 ### Bug Fixes
 
-* **ci:** update pnpm to v11 and add packageManager field ([e4fb09e](https://github.com/yedoma-labs/bylyt-env-guard/commit/e4fb09e80531b10c762a4556be69460baa81f0a7))
-* replace 'any' type with EnvValidationError in security test ([8b4291f](https://github.com/yedoma-labs/bylyt-env-guard/commit/8b4291fefbed390ff1e23b4367d355a43947566f))
+- **ci:** update pnpm to v11 and add packageManager field ([e4fb09e](https://github.com/yedoma-labs/bylyt-env-guard/commit/e4fb09e80531b10c762a4556be69460baa81f0a7))
+- replace 'any' type with EnvValidationError in security test ([8b4291f](https://github.com/yedoma-labs/bylyt-env-guard/commit/8b4291fefbed390ff1e23b4367d355a43947566f))
 
 # Changelog
 
@@ -23,14 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+
 - Migrated from Bun to pnpm for package management
 - Updated pnpm to v11.5.2 and added `packageManager` field to package.json
 
 ### Fixed
+
 - CI/CD workflows now use pnpm v11 to match lockfile format
 - Replaced `any` type with proper `EnvValidationError` type in security test
 
 ### Documentation
+
 - Added npm, Node.js, TypeScript, and bundle size badges to README
 - Reordered badges for cleaner visual hierarchy
 - Added header image to documentation
@@ -38,44 +39,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.5] - 2024-05-29
 
 ### Fixed
+
 - Prevent git hooks installation when installed as dependency
 - Suppress console.warn noise in regex safety tests
 
 ### Changed
+
 - Remove prepare script, add manual git hooks setup to docs
 
 ### Documentation
+
 - Updated security hints and best practices
 
 ## [0.3.4] - 2024-05-29
 
 ### Security
+
 - Add ReDoS (Regular Expression Denial of Service) protection
 - Improve transform timeout monitoring and warnings
 
 ## [0.3.3] - 2024-05-29
 
 ### Changed
+
 - Version bump (no functional changes)
 
 ## [0.3.2] - 2024-05-29
 
 ### Security
+
 - Add transform timeout protection to prevent hanging operations
 - Fix watcher TOCTOU (Time-Of-Check Time-Of-Use) race condition
 
 ### Changed
+
 - Migrate build system from tsup to tsdown
 
 ## [0.3.1] - 2024-05-29
 
 ### Security
+
 - Additional protections against DoS and resource exhaustion
 - Fix prototype pollution vulnerabilities
 - Add deep freeze for circular reference protection
 - Improve watcher error safety
 
 ### Documentation
+
 - Add comprehensive security policy and best practices
 
 ## [0.3.0] - 2024-05-29
@@ -83,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial public release with security-hardened environment validation.
 
 ### Added
+
 - Type-safe environment variable validation
 - Zero-dependency core implementation
 - Support for string, number, boolean, enum, url, and email types
