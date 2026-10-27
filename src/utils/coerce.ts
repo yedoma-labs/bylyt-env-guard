@@ -2,6 +2,14 @@ import type { ArrayItemKind, SchemaFieldKind } from "../schema/types.js";
 
 const TRUE_VALUES = new Set(["true", "1", "yes", "on"]);
 const FALSE_VALUES = new Set(["false", "0", "no", "off"]);
+const DURATION_UNIT_MS: Record<string, number> = {
+	ms: 1,
+	s: 1_000,
+	m: 60_000,
+	h: 3_600_000,
+	d: 86_400_000,
+};
+const DURATION_PATTERN = /^(\d+(?:\.\d+)?)(ms|s|m|h|d)$/;
 
 export function coerce(
 	raw: string,
@@ -76,6 +84,19 @@ export function coerce(
 				throw new CoercionError(raw, "date");
 			}
 			return d;
+		}
+
+		case "duration": {
+			const match = DURATION_PATTERN.exec(raw.trim());
+			const unit = match?.[2];
+			if (!match || unit === undefined) {
+				throw new CoercionError(raw, "duration (e.g. 500ms, 30s, 5m, 2h, 7d)");
+			}
+			const ms = Number(match[1]) * (DURATION_UNIT_MS[unit] ?? Number.NaN);
+			if (!Number.isFinite(ms)) {
+				throw new CoercionError(raw, "duration (out of range)");
+			}
+			return ms;
 		}
 
 		case "group":

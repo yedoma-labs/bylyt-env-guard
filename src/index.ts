@@ -1,7 +1,9 @@
 import type { EnvSource } from "./core/parser.js";
 import { resolveSources } from "./core/resolver.js";
 import { validateAndCoerce } from "./core/validator.js";
+import { EnvValidationError } from "./errors/validation-error.js";
 import type { InferEnv, SchemaDefinition } from "./schema/types.js";
+import type { ValidationFailure } from "./schema/validators.js";
 import { deepFreeze } from "./utils/deep-freeze.js";
 
 export type { WatchCallback, WatchHandle, WatchOptions } from "./core/watcher.js";
@@ -22,6 +24,27 @@ export interface CreateEnvOptions<T extends SchemaDefinition> {
 	strict?: boolean;
 	profiles?: Record<string, Record<string, string>>;
 	activeProfile?: string;
+}
+
+export type SafeCreateEnvResult<T extends SchemaDefinition> =
+	| { success: true; env: InferEnv<T>; failures: [] }
+	| { success: false; env?: undefined; failures: readonly ValidationFailure[] };
+
+/**
+ * Same as `createEnv`, but returns validation failures instead of throwing.
+ * Every failing field is reported. Errors that are not validation failures are still thrown.
+ */
+export function safeCreateEnv<T extends SchemaDefinition>(
+	options: CreateEnvOptions<T>,
+): SafeCreateEnvResult<T> {
+	try {
+		return { success: true, env: createEnv(options), failures: [] };
+	} catch (err) {
+		if (err instanceof EnvValidationError) {
+			return { success: false, failures: err.failures };
+		}
+		throw err;
+	}
 }
 
 export function createEnv<T extends SchemaDefinition>(options: CreateEnvOptions<T>): InferEnv<T> {

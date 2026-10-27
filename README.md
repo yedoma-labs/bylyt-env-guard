@@ -566,13 +566,41 @@ try {
 			console.error(`${failure.field}: ${failure.message} [${failure.code}]`);
 		}
 		// failure.code is one of: MISSING | INVALID_TYPE | INVALID_URL | INVALID_EMAIL |
-		// INVALID_ENUM | INVALID_JSON | INVALID_DATE | INVALID_PROTOCOL |
-		// MIN_VALUE | MAX_VALUE | MIN_LENGTH | MAX_LENGTH | PATTERN | CUSTOM
+		// INVALID_ENUM | INVALID_DATE | INVALID_PROTOCOL | MIN_VALUE | MAX_VALUE |
+		// MIN_LENGTH | MAX_LENGTH | PATTERN | CUSTOM | TRANSFORM_ERROR | INTERNAL
 		process.exit(1);
 	}
 	throw err;
 }
 ```
+
+### Report Failures Without Throwing
+
+`safeCreateEnv` takes the same options as `createEnv` but returns a result instead of throwing. Use it for CLIs, health checks, or scripts that should print every problem and decide what to do:
+
+```typescript
+import { safeCreateEnv, eg } from "@yedoma-labs/bylyt-env-guard";
+
+const result = safeCreateEnv({
+	schema: {
+		DATABASE_URL: eg.url().sensitive(),
+		CACHE_TTL: eg.duration().default(5 * 60_000), // defaults are not parsed: use milliseconds
+	},
+});
+
+if (!result.success) {
+	for (const f of result.failures) console.error(`${f.field}: ${f.message}`);
+	process.exit(1);
+}
+
+result.env.CACHE_TTL; // number (milliseconds)
+```
+
+Only validation failures are returned this way. Other errors, such as a throwing custom validator, are still thrown.
+
+### Durations
+
+`eg.duration()` converts strings like `500ms`, `1.5s`, `30s`, `5m`, `2h` or `7d` into milliseconds. A bare number such as `30` is rejected because the unit is ambiguous. Use `.min()` and `.max()` with milliseconds.
 
 Console output when validation fails:
 ```
@@ -599,6 +627,7 @@ Console output when validation fails:
 | `eg.email()`              | `string`                 | Validated email address format                       |
 | `eg.json<T>()`            | `T` (default: `unknown`) | Parses JSON string                                   |
 | `eg.date()`               | `Date`                   | Parses date string to `Date` object                  |
+| `eg.duration()`           | `number`                 | Milliseconds from `500ms`, `30s`, `5m`, `2h`, `7d`   |
 | `eg.array()`              | `string[]`               | Split by separator (default: `,`)                    |
 | `eg.group({...})`         | `object`                 | Reads `KEY__SUBKEY` env vars as nested object        |
 | `eg.arrayOfGroups({...})` | `object[]`               | Reads `KEY_0_SUBKEY`, `KEY_1_SUBKEY`, … as array     |
@@ -627,8 +656,8 @@ Console output when validation fails:
 
 | Method                       | Types                      | Description                                                               |
 | ---------------------------- | -------------------------- | ------------------------------------------------------------------------- |
-| `.min(n)`                    | `number`, `integer`        | Minimum value                                                             |
-| `.max(n)`                    | `number`, `integer`        | Maximum value                                                             |
+| `.min(n)`                    | `number`, `integer`, `duration` | Minimum value (milliseconds for `duration`)                          |
+| `.max(n)`                    | `number`, `integer`, `duration` | Maximum value (milliseconds for `duration`)                          |
 | `.minLength(n)`              | `string`, `email`, `array` | Min length / min item count                                               |
 | `.maxLength(n)`              | `string`, `email`, `array` | Max length / max item count                                               |
 | `.pattern(re)`               | `string`                   | Must match regex                                                          |

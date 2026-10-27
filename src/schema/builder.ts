@@ -212,6 +212,24 @@ class DateFieldBuilder<T extends Date | undefined = Date> extends FieldBuilder<T
 	}
 }
 
+class DurationFieldBuilder<T extends number | undefined = number> extends FieldBuilder<T> {
+	constructor() {
+		super({ kind: "duration", isRequired: true, isSensitive: false });
+	}
+
+	/** Minimum duration in milliseconds. */
+	min(ms: number): this {
+		this._options.minValue = ms;
+		return this;
+	}
+
+	/** Maximum duration in milliseconds. */
+	max(ms: number): this {
+		this._options.maxValue = ms;
+		return this;
+	}
+}
+
 class ArrayFieldBuilder<T extends unknown[] | undefined = string[]> extends FieldBuilder<T> {
 	constructor() {
 		super({ kind: "array", isRequired: true, isSensitive: false, separator: "," });
@@ -303,6 +321,7 @@ export const eg = {
 	email: (): EmailFieldBuilder => new EmailFieldBuilder(),
 	json: <T = unknown>(): JsonFieldBuilder<T> => new JsonFieldBuilder<T>(),
 	date: (): DateFieldBuilder => new DateFieldBuilder(),
+	duration: (): DurationFieldBuilder => new DurationFieldBuilder(),
 	array: (): ArrayFieldBuilder => new ArrayFieldBuilder(),
 	group: <T extends SchemaDefinition>(
 		subSchema: T,

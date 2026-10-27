@@ -35,7 +35,7 @@ export function validateField(
 	if (kind === "enum") {
 		return validateEnum(key, value as string, options);
 	}
-	if (kind === "number" || kind === "port" || kind === "integer") {
+	if (kind === "number" || kind === "port" || kind === "integer" || kind === "duration") {
 		return validateNumber(key, value as number, options);
 	}
 	if (kind === "boolean") {

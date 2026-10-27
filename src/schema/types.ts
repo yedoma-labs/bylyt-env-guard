@@ -10,6 +10,7 @@ export type SchemaFieldKind =
 	| "email"
 	| "json"
 	| "date"
+	| "duration"
 	| "group"
 	| "array-of-groups"
 	| "record";

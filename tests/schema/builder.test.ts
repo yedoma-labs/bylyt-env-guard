@@ -245,3 +245,13 @@ describe("eg.record", () => {
 		expect(r._options.recordPattern).toBeUndefined();
 	});
 });
+
+describe("schema builder duration", () => {
+	it("creates duration field with min/max in milliseconds", () => {
+		const field = eg.duration().min(1_000).max(60_000);
+		expect(field._options.kind).toBe("duration");
+		expect(field._options.isRequired).toBe(true);
+		expect(field._options.minValue).toBe(1_000);
+		expect(field._options.maxValue).toBe(60_000);
+	});
+});

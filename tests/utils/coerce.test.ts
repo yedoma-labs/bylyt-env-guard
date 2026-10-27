@@ -114,3 +114,32 @@ describe("coerce", () => {
 		expect(() => coerce("1,abc,3", "array", ",", "number")).toThrow(CoercionError);
 	});
 });
+
+describe("coerce duration", () => {
+	it("converts each unit to milliseconds", () => {
+		expect(coerce("250ms", "duration")).toBe(250);
+		expect(coerce("30s", "duration")).toBe(30_000);
+		expect(coerce("5m", "duration")).toBe(300_000);
+		expect(coerce("2h", "duration")).toBe(7_200_000);
+		expect(coerce("7d", "duration")).toBe(604_800_000);
+	});
+
+	it("accepts decimals and surrounding whitespace", () => {
+		expect(coerce("1.5s", "duration")).toBe(1_500);
+		expect(coerce("  10m ", "duration")).toBe(600_000);
+	});
+
+	it("accepts zero", () => {
+		expect(coerce("0s", "duration")).toBe(0);
+	});
+
+	it("rejects bare numbers, unknown units and negative values", () => {
+		for (const v of ["30", "5 minutes", "1w", "-5s", "5M", "S5", "", "1.s"]) {
+			expect(() => coerce(v, "duration")).toThrow(CoercionError);
+		}
+	});
+
+	it("rejects values that overflow to a non-finite number", () => {
+		expect(() => coerce(`${"9".repeat(400)}d`, "duration")).toThrow(CoercionError);
+	});
+});
