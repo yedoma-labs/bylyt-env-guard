@@ -1,6 +1,6 @@
 {
 	"name": "@yedoma-labs/bylyt-env-guard",
-	"version": "0.3.8",
+	"version": "0.4.0",
 	"description": "Type-safe, zero-dependency environment variable validation with fail-fast semantics",
 	"type": "module",
 	"main": "./dist/index.cjs",

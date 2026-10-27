@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.8...v0.4.0) (2026-10-27)
+
+
+### Features
+
+* add eg.duration() and safeCreateEnv() ([340adde](https://github.com/yedoma-labs/bylyt-env-guard/commit/340adde017e06fc47ae06d943c40ac9723d05c6a))
+
 ## [0.3.8](https://github.com/yedoma-labs/bylyt-env-guard/compare/v0.3.7...v0.3.8) (2026-10-26)
 
 
